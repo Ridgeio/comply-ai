@@ -13,11 +13,16 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "test:run": "turbo run test:run",
+    "test:env": "dotenv -e .env.local -- turbo run test",
     "typecheck": "turbo run typecheck",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:link": "echo 'Link in terminal: supabase link --project-ref XXX'"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "dotenv-cli": "^7.3.0",
     "eslint": "^8.56.0",
     "prettier": "^3.2.4",
     "turbo": "^1.11.3",
