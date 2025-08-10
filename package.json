@@ -18,7 +18,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
-    "supabase:link": "echo 'Link in terminal: supabase link --project-ref XXX'"
+    "supabase:link": "echo 'Link in terminal: supabase link --project-ref XXX'",
+    "db:reset": "supabase db reset",
+    "migrate": "supabase db reset --no-seed && supabase db push"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
