@@ -25,6 +25,7 @@
     "dotenv-cli": "^7.3.0",
     "eslint": "^8.56.0",
     "prettier": "^3.2.4",
+    "tsx": "^4.7.0",
     "turbo": "^1.11.3",
     "typescript": "^5.3.3"
   },
