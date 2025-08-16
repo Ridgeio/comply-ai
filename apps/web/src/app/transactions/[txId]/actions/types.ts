@@ -8,4 +8,5 @@ export interface FileWithJobStatus {
   job_status: 'queued' | 'processing' | 'completed' | 'error'
   job_id: string
   job_error?: string
+  extraction_mode?: 'acroform' | 'ocr'
 }

@@ -1,29 +1,119 @@
 import type { RawTrec20 } from './types';
 import { TREC20_FIELD_MAPPINGS } from './mappings/trec20.acroform';
 import { readAcroForm } from './acroform';
-import { detectVersion } from './versionDetector';
+import { detectVersion, detectVersionFromText } from './versionDetector';
+import { OcrProvider, parseRawFromOcrText } from './ocr';
 
 const VALID_FINANCING_TYPES = ['cash', 'conventional', 'fha', 'va', 'other'] as const;
+
+export type ExtractionMode = 'acroform' | 'ocr';
+
+export interface Trec20Result {
+  raw: RawTrec20;
+  meta: {
+    mode: ExtractionMode;
+    version?: string;
+  };
+}
 
 /**
  * Extract raw TREC20 data from a PDF buffer
  * Combines form field extraction with version detection
+ * Falls back to OCR if no form fields are found
  */
-export async function toRawTrec20(buffer: Uint8Array): Promise<RawTrec20 & { formVersion?: string }> {
-  // Extract form fields
+export async function toRawTrec20(
+  buffer: Uint8Array, 
+  opts?: { ocrProvider?: OcrProvider }
+): Promise<Trec20Result> {
+  // Try to extract form fields first
   const fields = await readAcroForm(buffer);
   
-  // Map to raw structure
-  const rawData = mapAcroformToRawTrec20(fields);
+  // Check if we have meaningful data fields (not just signature fields)
+  const meaningfulFields = Object.keys(fields).filter(key => 
+    !key.toLowerCase().includes('signature') && 
+    !key.toLowerCase().includes('initial')
+  );
   
-  // Detect version
-  const versionInfo = await detectVersion(buffer);
+  if (meaningfulFields.length > 0) {
+    // Use AcroForm extraction
+    const rawData = mapAcroformToRawTrec20(fields);
+    const versionInfo = await detectVersion(buffer);
+    
+    return {
+      raw: {
+        ...rawData,
+        formVersion: versionInfo.version
+      },
+      meta: {
+        mode: 'acroform',
+        version: versionInfo.version
+      }
+    };
+  }
   
-  // Combine results
+  // No fields found - need OCR
+  if (!opts?.ocrProvider) {
+    throw new Error('OCR provider not configured for non-fillable PDF');
+  }
+  
+  // Use OCR to extract text
+  const ocrResult = await opts.ocrProvider.recognize(buffer);
+  const ocrFields = parseRawFromOcrText(ocrResult.fullText);
+  
+  // Convert OCR fields to RawTrec20 format
+  const rawData = mapOcrToRawTrec20(ocrFields);
+  
+  // Detect version from OCR text
+  const version = detectVersionFromText(ocrResult.fullText);
+  
   return {
-    ...rawData,
-    formVersion: versionInfo.version
+    raw: {
+      ...rawData,
+      formVersion: version
+    },
+    meta: {
+      mode: 'ocr',
+      version
+    }
   };
+}
+
+/**
+ * Map OCR-extracted fields to RawTrec20 structure
+ */
+function mapOcrToRawTrec20(fields: Record<string, string>): RawTrec20 {
+  const result: RawTrec20 = {
+    buyer_names: fields.buyer_names ? [fields.buyer_names] : [],
+    seller_names: fields.seller_names ? [fields.seller_names] : [],
+    property_address: {
+      street: fields.property_street_address || '',
+      city: fields.property_city || '',
+      state: fields.property_state || '',
+      zip: fields.property_zip || ''
+    },
+    sales_price: {
+      cash_portion: '',
+      financed_portion: '',
+      total: fields.total_sales_price || ''
+    },
+    property_street_address: fields.property_street_address,
+    property_city: fields.property_city,
+    property_state: fields.property_state,
+    property_zip: fields.property_zip,
+    total_sales_price: fields.total_sales_price,
+    option_fee: fields.option_fee,
+    option_period_days: fields.option_period_days,
+    closing_date: fields.closing_date,
+    special_provisions: fields.special_provisions,
+    earnest_money: fields.earnest_money,
+    title_company: fields.title_company,
+    effective_date: fields.effective_date,
+    hoa_fees: fields.hoa_fees,
+    survey: fields.survey,
+    financing: fields.financing
+  };
+  
+  return result;
 }
 
 export function mapAcroformToRawTrec20(fields: Record<string, string>): RawTrec20 {

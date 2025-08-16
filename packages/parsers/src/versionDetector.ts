@@ -8,6 +8,27 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
+/**
+ * Detect version from text content (used by OCR path)
+ */
+export function detectVersionFromText(text: string): string | undefined {
+  // Check for TREC patterns
+  const versionPatterns = [
+    /TREC\s+No\.\s*([\d-]+)/i,
+    /TREC\s+([\d-]+)/i,
+    /Form\s+([\d-]+)/i
+  ];
+  
+  for (const pattern of versionPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+  
+  return undefined;
+}
+
 export async function detectVersion(buffer: Uint8Array): Promise<VersionDetectionResult> {
   try {
     let allText = '';

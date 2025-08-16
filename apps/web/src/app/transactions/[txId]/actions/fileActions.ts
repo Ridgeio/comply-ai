@@ -35,7 +35,7 @@ export async function listFilesWithJobStatus(txId: string): Promise<FileWithJobS
       throw new Error('You do not have access to this transaction')
     }
     
-    // Get files with their latest job status
+    // Get files with their latest job status and extraction mode
     const { data: files, error } = await supabase
       .from('transaction_files')
       .select(`
@@ -43,6 +43,7 @@ export async function listFilesWithJobStatus(txId: string): Promise<FileWithJobS
         path,
         uploaded_by,
         created_at,
+        extraction_mode,
         ingest_jobs!inner (
           id,
           status,

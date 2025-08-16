@@ -40,6 +40,9 @@ export function FilesTab({ txId }: FilesTabProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  
+  // Check if any files are in OCR mode
+  const hasOcrFiles = files.some(f => f.extraction_mode === 'ocr')
 
   // Load files on mount and after uploads
   const loadFiles = useCallback(async () => {
@@ -224,6 +227,16 @@ export function FilesTab({ txId }: FilesTabProps) {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{uploadError}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* OCR Mode Banner */}
+      {hasOcrFiles && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Scanned mode may reduce accuracy. Some documents were processed using OCR text extraction.
+          </AlertDescription>
         </Alert>
       )}
 

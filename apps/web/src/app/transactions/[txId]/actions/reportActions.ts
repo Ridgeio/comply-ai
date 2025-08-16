@@ -145,6 +145,21 @@ export async function generateReport(input: z.infer<typeof generateReportSchema>
 
     if (reportError) throw reportError
 
+    // TODO: In production, this is where we would:
+    // 1. Download the file from storage
+    // 2. Parse it with toRawTrec20()
+    // 3. Check the result.meta.mode to determine extraction mode
+    // 4. Update transaction_files with the extraction_mode
+    
+    // For now, simulate random extraction mode for dev
+    const simulatedMode = Math.random() > 0.7 ? 'ocr' : 'acroform'
+    
+    // Update file with extraction mode
+    await supabase
+      .from('transaction_files')
+      .update({ extraction_mode: simulatedMode })
+      .eq('id', primaryFileId)
+    
     // Generate dev stub issues
     const issues = generateDevStubIssues(reportId)
     
