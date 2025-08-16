@@ -1,6 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { uploadFiles } from '../src/app/transactions/[txId]/actions/uploadFiles'
 
+// Mock Next.js cache functions
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn()
+}))
+
+// Polyfill File.arrayBuffer() for Node.js test environment
+// This needs to be done before any File instances are created
+global.File = class extends File {
+  constructor(...args: any[]) {
+    super(...args)
+  }
+  
+  async arrayBuffer(): Promise<ArrayBuffer> {
+    // Return a mock ArrayBuffer for testing
+    const encoder = new TextEncoder()
+    return encoder.encode('%PDF-1.4 mock content').buffer
+  }
+} as any
+
 // Mock Supabase client
 const mockStorage = {
   from: vi.fn(() => ({
@@ -30,6 +49,28 @@ vi.mock('../src/lib/supabaseAdmin', () => ({
   }))
 }))
 
+// Mock supabaseServer to avoid cookies error
+vi.mock('../src/lib/supabaseServer', () => ({
+  supabaseServer: vi.fn(() => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { 
+          user: { 
+            id: 'test-user-id',
+            email: 'test@example.com'
+          } 
+        },
+        error: null
+      })
+    }
+  }))
+}))
+
+// Mock auth helpers - will be configured in beforeEach
+vi.mock('../src/lib/auth-helpers', () => ({
+  getAuthenticatedContext: vi.fn()
+}))
+
 // Mock buildStoragePath
 vi.mock('@repo/shared', () => ({
   buildStoragePath: vi.fn((params) => 
@@ -37,9 +78,25 @@ vi.mock('@repo/shared', () => ({
   )
 }))
 
+// Import the auth-helpers module for mocking
+import { getAuthenticatedContext } from '../src/lib/auth-helpers'
+
 describe('uploadFiles', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    
+    // Configure the auth helpers mock for each test
+    vi.mocked(getAuthenticatedContext).mockResolvedValue({
+      user: { 
+        id: 'user-123',
+        email: 'test@example.com'
+      },
+      adminClient: {
+        storage: mockStorage,
+        from: mockDb.from,
+        auth: mockDb.auth
+      }
+    })
   })
 
   it('should upload PDF and create database records', async () => {

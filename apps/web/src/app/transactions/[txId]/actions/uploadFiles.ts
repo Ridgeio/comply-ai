@@ -1,6 +1,6 @@
 'use server'
 
-import { createAdminClient } from '@/src/lib/supabaseAdmin'
+import { getAuthenticatedContext } from '@/src/lib/auth-helpers'
 import { buildStoragePath } from '@repo/shared'
 import { revalidatePath } from 'next/cache'
 
@@ -24,13 +24,7 @@ const ALLOWED_MIME_TYPE = 'application/pdf'
  */
 export async function uploadFiles(formData: FormData): Promise<UploadResult> {
   try {
-    const supabase = createAdminClient()
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return { success: false, error: 'Authentication required' }
-    }
+    const { user, adminClient: supabase } = await getAuthenticatedContext()
 
     // Get transaction ID from form data
     const txId = formData.get('txId') as string

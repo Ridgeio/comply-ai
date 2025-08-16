@@ -21,6 +21,7 @@
     ],
     "paths": {
       "@/*": ["./*"],
+      "@repo/parsers": ["../../packages/parsers/src"],
       "@repo/shared": ["../../packages/shared/src"]
     },
     "baseUrl": "."
