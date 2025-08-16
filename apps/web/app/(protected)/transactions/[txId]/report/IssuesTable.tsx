@@ -5,7 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Download, FileText } from 'lucide-react'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { Download, FileText, ChevronDown, ChevronRight, AlertCircle, Bot } from 'lucide-react'
 import type { ComplianceIssue } from '@/src/app/transactions/[txId]/actions/reportActions'
 
 interface IssuesTableProps {
@@ -16,6 +21,7 @@ export function IssuesTable({ issues }: IssuesTableProps) {
   const [visibleSeverities, setVisibleSeverities] = useState<Set<ComplianceIssue['severity']>>(
     new Set(['critical', 'high', 'medium', 'low', 'info'])
   )
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   const severityConfig = {
     critical: { label: 'critical', bgClass: 'bg-red-100', textClass: 'text-red-800' },
@@ -33,6 +39,16 @@ export function IssuesTable({ issues }: IssuesTableProps) {
       newSet.add(severity)
     }
     setVisibleSeverities(newSet)
+  }
+
+  const toggleRowExpansion = (issueId: string) => {
+    const newSet = new Set(expandedRows)
+    if (newSet.has(issueId)) {
+      newSet.delete(issueId)
+    } else {
+      newSet.add(issueId)
+    }
+    setExpandedRows(newSet)
   }
 
   const filteredIssues = issues.filter(issue => visibleSeverities.has(issue.severity))
@@ -108,23 +124,99 @@ export function IssuesTable({ issues }: IssuesTableProps) {
             <TableBody>
               {filteredIssues.map((issue) => {
                 const config = severityConfig[issue.severity]
+                const hasAiDetails = issue.code.startsWith('SPECIAL_PROVISIONS_AI') && issue.details_json
+                const isExpanded = expandedRows.has(issue.id)
+                
                 return (
-                  <TableRow key={issue.id}>
-                    <TableCell>
-                      <Badge 
-                        className={`${config.bgClass} ${config.textClass} border-0`}
-                      >
-                        {issue.severity}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {issue.code}
-                    </TableCell>
-                    <TableCell>{issue.message}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {issue.cite || '-'}
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow key={issue.id}>
+                      <TableCell>
+                        <Badge 
+                          className={`${config.bgClass} ${config.textClass} border-0`}
+                        >
+                          {issue.severity}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        <div className="flex items-center gap-2">
+                          {issue.code}
+                          {hasAiDetails && (
+                            <Badge variant="outline" className="text-xs">
+                              <Bot className="h-3 w-3 mr-1" />
+                              AI
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span>{issue.message}</span>
+                          {hasAiDetails && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleRowExpansion(issue.id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {issue.cite || '-'}
+                      </TableCell>
+                    </TableRow>
+                    {hasAiDetails && isExpanded && (
+                      <TableRow key={`${issue.id}-details`}>
+                        <TableCell colSpan={4} className="bg-muted/30">
+                          <div className="p-4 space-y-3">
+                            {issue.details_json?.summary && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-1">AI Summary</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {issue.details_json.summary}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {issue.details_json?.reasons && issue.details_json.reasons.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-1">Identified Concerns</h4>
+                                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                                  {issue.details_json.reasons.map((reason, idx) => (
+                                    <li key={idx}>{reason}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {issue.details_json?.hints && issue.details_json.hints.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-1">Pattern Matches</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {issue.details_json.hints.map((hint, idx) => (
+                                    <Badge key={idx} variant="secondary" className="text-xs">
+                                      {hint}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <AlertCircle className="h-3 w-3" />
+                              <span>This is an AI-generated analysis and should be reviewed by a qualified professional.</span>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 )
               })}
             </TableBody>

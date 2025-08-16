@@ -2,6 +2,8 @@
 
 import { getAuthenticatedContext } from '@/src/lib/auth-helpers'
 import { requireCurrentOrg } from '@/src/lib/org'
+import { createProvider } from '@/src/lib/ai/provider'
+import { analyzeSpecialProvisions } from '@repo/shared/ai/specialProvisions'
 import { z } from 'zod'
 
 // Types
@@ -12,6 +14,12 @@ export interface ComplianceIssue {
   code: string
   message: string
   cite: string | null
+  details_json?: {
+    summary?: string
+    reasons?: string[]
+    hints?: string[]
+    ai_classification?: 'none' | 'caution' | 'review'
+  }
 }
 
 export interface Report {
@@ -37,8 +45,8 @@ const generateReportSchema = z.object({
 })
 
 // Helper to generate dev stub issues
-function generateDevStubIssues(reportId: string): ComplianceIssue[] {
-  return [
+async function generateDevStubIssues(reportId: string, specialProvisionsText?: string): Promise<ComplianceIssue[]> {
+  const issues: ComplianceIssue[] = [
     {
       id: `issue-${Math.random().toString(36).substr(2, 9)}`,
       report_id: reportId,
@@ -95,7 +103,45 @@ function generateDevStubIssues(reportId: string): ComplianceIssue[] {
       message: 'Special provisions section contains non-standard language',
       cite: null
     }
-  ]
+  ];
+
+  // Add AI analysis for special provisions if text is provided
+  if (specialProvisionsText) {
+    try {
+      const provider = createProvider();
+      const aiResult = await analyzeSpecialProvisions(specialProvisionsText, provider);
+      
+      // Map AI classification to severity
+      const severityMap = {
+        'review': 'high' as const,
+        'caution': 'low' as const,
+        'none': 'info' as const
+      };
+      
+      // Create AI-powered issue
+      const aiIssue: ComplianceIssue = {
+        id: `issue-${Math.random().toString(36).substr(2, 9)}`,
+        report_id: reportId,
+        severity: severityMap[aiResult.classification],
+        code: `SPECIAL_PROVISIONS_AI_${aiResult.classification.toUpperCase()}`,
+        message: `AI Analysis: Special provisions require ${aiResult.classification === 'review' ? 'careful review' : aiResult.classification === 'caution' ? 'attention' : 'no action'}`,
+        cite: 'TREC 20-18 ¶11',
+        details_json: {
+          summary: aiResult.summary,
+          reasons: aiResult.reasons,
+          hints: aiResult.hints,
+          ai_classification: aiResult.classification
+        }
+      };
+      
+      issues.push(aiIssue);
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+      // Continue without AI analysis if it fails
+    }
+  }
+
+  return issues;
 }
 
 export async function generateReport(input: z.infer<typeof generateReportSchema>) {
@@ -150,6 +196,7 @@ export async function generateReport(input: z.infer<typeof generateReportSchema>
     // 2. Parse it with toRawTrec20()
     // 3. Check the result.meta.mode to determine extraction mode
     // 4. Update transaction_files with the extraction_mode
+    // 5. Extract special provisions text from parsed data
     
     // For now, simulate random extraction mode for dev
     const simulatedMode = Math.random() > 0.7 ? 'ocr' : 'acroform'
@@ -160,8 +207,13 @@ export async function generateReport(input: z.infer<typeof generateReportSchema>
       .update({ extraction_mode: simulatedMode })
       .eq('id', primaryFileId)
     
-    // Generate dev stub issues
-    const issues = generateDevStubIssues(reportId)
+    // Simulate special provisions text for dev
+    const specialProvisionsText = Math.random() > 0.5 
+      ? 'Buyer requires seller to pay all closing costs and extend option period automatically.'
+      : 'Seller to professionally clean home prior to closing.';
+    
+    // Generate dev stub issues with AI analysis
+    const issues = await generateDevStubIssues(reportId, specialProvisionsText)
     
     // Insert issues
     const { error: issuesError } = await supabase
