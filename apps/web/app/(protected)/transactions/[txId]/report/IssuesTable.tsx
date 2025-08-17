@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -128,8 +128,8 @@ export function IssuesTable({ issues }: IssuesTableProps) {
                 const isExpanded = expandedRows.has(issue.id)
                 
                 return (
-                  <>
-                    <TableRow key={issue.id}>
+                  <React.Fragment key={issue.id}>
+                    <TableRow>
                       <TableCell>
                         <Badge 
                           className={`${config.bgClass} ${config.textClass} border-0`}
@@ -216,7 +216,7 @@ export function IssuesTable({ issues }: IssuesTableProps) {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </React.Fragment>
                 )
               })}
             </TableBody>

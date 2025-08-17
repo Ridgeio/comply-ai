@@ -4,6 +4,7 @@ import { getAuthenticatedContext } from '@/src/lib/auth-helpers'
 import { requireCurrentOrg } from '@/src/lib/org'
 import { createProvider } from '@/src/lib/ai/provider'
 import { analyzeSpecialProvisions } from '@repo/shared/ai/specialProvisions'
+import { buildRegistry } from '@repo/shared/rules/formsRegistry'
 import { z } from 'zod'
 
 // Types
@@ -45,7 +46,20 @@ const generateReportSchema = z.object({
 })
 
 // Helper to generate dev stub issues
-async function generateDevStubIssues(reportId: string, specialProvisionsText?: string): Promise<ComplianceIssue[]> {
+async function generateDevStubIssues(
+  reportId: string, 
+  specialProvisionsText?: string,
+  formVersion?: string
+): Promise<ComplianceIssue[]> {
+  // Load forms registry
+  const { adminClient: supabase } = await getAuthenticatedContext();
+  const { data: registryRows } = await supabase
+    .from('forms_registry')
+    .select('form_code, expected_version, effective_date');
+  
+  const registry = buildRegistry(registryRows || []);
+  const expectedVersion = registry['TREC-20']?.expected_version || '20-18';
+  
   const issues: ComplianceIssue[] = [
     {
       id: `issue-${Math.random().toString(36).substr(2, 9)}`,
@@ -60,8 +74,14 @@ async function generateDevStubIssues(reportId: string, specialProvisionsText?: s
       report_id: reportId,
       severity: 'high',
       code: 'OUTDATED_VERSION',
-      message: 'Form version is outdated (using 2021 version, current is 2024)',
-      cite: 'TREC Updates'
+      message: formVersion && formVersion !== expectedVersion 
+        ? `Form version is outdated (using ${formVersion}, expected ${expectedVersion})`
+        : `Form version is outdated (expected ${expectedVersion})`,
+      cite: 'TREC Updates',
+      details_json: {
+        summary: `The form version does not match the current expected version in the registry`,
+        reasons: [`Found version: ${formVersion || 'unknown'}`, `Expected version: ${expectedVersion}`]
+      }
     },
     {
       id: `issue-${Math.random().toString(36).substr(2, 9)}`,
@@ -212,8 +232,11 @@ export async function generateReport(input: z.infer<typeof generateReportSchema>
       ? 'Buyer requires seller to pay all closing costs and extend option period automatically.'
       : 'Seller to professionally clean home prior to closing.';
     
-    // Generate dev stub issues with AI analysis
-    const issues = await generateDevStubIssues(reportId, specialProvisionsText)
+    // Simulate form version for dev (sometimes outdated)
+    const simulatedFormVersion = Math.random() > 0.3 ? '20-18' : '20-17';
+    
+    // Generate dev stub issues with AI analysis and registry check
+    const issues = await generateDevStubIssues(reportId, specialProvisionsText, simulatedFormVersion)
     
     // Insert issues
     const { error: issuesError } = await supabase

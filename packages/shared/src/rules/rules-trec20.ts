@@ -1,5 +1,6 @@
 import type { Rule } from './types';
 import type { Trec20 } from '../schemas/trec';
+import { FormsRegistry, isOutdated, getExpectedVersion } from './formsRegistry';
 
 // Helper functions for date calculations
 function addDaysToIsoDate(isoDate: string, days: number): string {
@@ -16,28 +17,31 @@ function isWeekend(isoDate: string): boolean {
   return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
 }
 
-// Define all 25 rules
-export const trec20Rules: Rule<Trec20>[] = [
-  // 1. Version present
-  {
-    id: 'trec20.version.missing',
-    description: 'Form version is missing',
-    severity: 'high',
-    cite: 'Form footer',
-    predicate: (trec) => !trec.formVersion || trec.formVersion.trim() === '',
-  },
+// Define all 25 rules as a function that takes a registry
+export function trec20Rules(registry: FormsRegistry): Rule<Trec20>[] {
+  const expectedVersion = getExpectedVersion('TREC-20', registry) || '20-18'; // Fallback for compatibility
+  
+  return [
+    // 1. Version present
+    {
+      id: 'trec20.version.missing',
+      description: 'Form version is missing',
+      severity: 'high',
+      cite: 'Form footer',
+      predicate: (trec) => !trec.formVersion || trec.formVersion.trim() === '',
+    },
 
-  // 2. Version outdated
-  {
-    id: 'trec20.version.outdated',
-    description: 'Form version is outdated',
-    severity: 'high',
-    cite: 'TREC Form Updates',
-    predicate: (trec) => !!trec.formVersion && trec.formVersion !== '20-18',
-    build: (trec) => ({
-      message: `Form version ${trec.formVersion} is outdated; current version is 20-18`,
-      data: { currentVersion: trec.formVersion, requiredVersion: '20-18' },
-    }),
+    // 2. Version outdated
+    {
+      id: 'trec20.version.outdated',
+      description: 'Outdated form version',
+      severity: 'high',
+      cite: 'Form footer',
+      predicate: (trec) => isOutdated(trec.formVersion, 'TREC-20', registry),
+      build: (trec) => ({
+        message: `Outdated form version: ${trec.formVersion}. Expected ${expectedVersion}`,
+        data: { currentVersion: trec.formVersion, expectedVersion },
+      }),
   },
 
   // 3. Buyer required
@@ -368,4 +372,8 @@ export const trec20Rules: Rule<Trec20>[] = [
       },
     }),
   },
-];
+  ];
+}
+
+// Export a default rules array for backward compatibility (uses empty registry)
+export const trec20RulesDefault = trec20Rules({});
