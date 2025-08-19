@@ -1,6 +1,7 @@
 'use client'
 
 import { sum } from '@repo/shared'
+
 import { Badge } from '@/components/ui/badge'
 
 export function MathDemo() {

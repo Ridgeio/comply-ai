@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { Upload, File, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
+import { useState, useCallback, useRef } from 'react'
+
 import { uploadFiles } from '../actions/uploadFiles'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Upload, File, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
 
 interface FileUploadStatus {
   file: File
@@ -93,7 +96,7 @@ export default function UploadPage() {
       
       if (result.success && result.files) {
         // Update file statuses based on result
-        setFiles(prev => prev.map((fileStatus, index) => {
+        setFiles(prev => prev.map((fileStatus, _index) => {
           const uploadedFile = result.files?.find(f => 
             f.name === fileStatus.file.name
           )

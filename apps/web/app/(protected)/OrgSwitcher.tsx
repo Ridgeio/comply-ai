@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { Building2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { switchOrg } from '@/src/app/org/actions'
+import { useState } from 'react'
+
 import {
   Select,
   SelectContent,
@@ -10,7 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2 } from 'lucide-react'
+import { switchOrg } from '@/src/app/org/actions'
+
 
 interface OrgSwitcherProps {
   currentOrgId: string

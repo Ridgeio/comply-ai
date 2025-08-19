@@ -1,8 +1,10 @@
-import { requireUser } from '@/src/lib/auth'
-import { requireCurrentOrg, getUserOrganizations } from '@/src/lib/org'
+import { OrgSwitcher } from './OrgSwitcher'
+
 import { Navigation } from '@/components/navigation'
 import { UserNav } from '@/components/user-nav'
-import { OrgSwitcher } from './OrgSwitcher'
+import { requireUser } from '@/src/lib/auth'
+import { requireCurrentOrg, getUserOrganizations } from '@/src/lib/org'
+
 
 export default async function ProtectedLayout({
   children,

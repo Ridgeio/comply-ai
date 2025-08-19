@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
-import { getMembershipsForUser } from '@/src/lib/org'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
 import { CreateOrgForm } from './CreateOrgForm'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getMembershipsForUser } from '@/src/lib/org'
 
 export default async function OnboardingPage() {
   // Check if user already has an organization

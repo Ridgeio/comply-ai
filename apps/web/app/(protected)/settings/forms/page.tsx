@@ -1,18 +1,21 @@
-import { getFormsRegistry } from '@/src/app/settings/forms/actions';
-import { getAuthenticatedContext } from '@/src/lib/auth-helpers';
 import { FormsTable } from './FormsTable';
 
+import { fetchFormsRegistry } from '@/src/app/settings/forms/actions';
+import { getAuthenticatedContext } from '@/src/lib/auth-helpers';
+
 export default async function FormsRegistryPage() {
-  // Get current user to check if they're admin
-  const { user } = await getAuthenticatedContext();
-  
-  // TODO: Check if user has broker_admin role
-  // For now, we'll allow editing for all authenticated users
-  const isAdmin = true; // Replace with actual role check
-  
-  // Load forms from database
-  const forms = await getFormsRegistry();
-  
+  const { adminClient: supabase, user } = await getAuthenticatedContext();
+
+  // Get user's role
+  const { data: membership } = await supabase
+    .from('organization_memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .single();
+
+  // Fetch forms registry data
+  const forms = await fetchFormsRegistry();
+
   return (
     <div className="container mx-auto py-8">
       <div className="max-w-6xl mx-auto">
@@ -23,7 +26,7 @@ export default async function FormsRegistryPage() {
           </p>
         </div>
         
-        <FormsTable forms={forms} isAdmin={isAdmin} />
+        <FormsTable forms={forms} userRole={membership?.role || 'viewer'} />
         
         <div className="mt-6 text-sm text-muted-foreground">
           <p>

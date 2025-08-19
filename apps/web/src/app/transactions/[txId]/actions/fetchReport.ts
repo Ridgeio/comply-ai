@@ -1,8 +1,9 @@
 'use server';
 
-import { createClient } from '@repo/shared/supabase/server';
-import { fetchLatestReport, getUserOrgId, verifyTransactionAccess } from '@/src/lib/db';
+import { createClient } from '@repo/shared';
 import type { Issue } from '@repo/shared';
+
+import { fetchLatestReport, getUserOrgId, verifyTransactionAccess } from '@/src/lib/db';
 
 export async function fetchReport(transactionId: string) {
   try {

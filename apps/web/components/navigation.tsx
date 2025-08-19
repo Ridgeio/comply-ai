@@ -1,9 +1,10 @@
 'use client'
 
+import { Home, FileText, Shield, FileCheck, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+
 import { cn } from '@/lib/utils'
-import { Home, FileText, Shield, FileCheck, Settings } from 'lucide-react'
 
 const navItems = [
   {

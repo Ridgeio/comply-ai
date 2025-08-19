@@ -1,11 +1,13 @@
 'use client'
 
-import { useSearchParams, useRouter } from 'next/navigation'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, FileCheck } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
+
 import { FilesTab } from './FilesTab'
 import { ReportTab } from './ReportTab'
+
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface TransactionDetailClientProps {
   transaction: {

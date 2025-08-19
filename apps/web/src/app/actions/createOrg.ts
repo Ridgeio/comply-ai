@@ -1,7 +1,8 @@
 'use server'
 
-import { createAdminClient } from '@/src/lib/supabaseAdmin'
 import { revalidatePath } from 'next/cache'
+
+import { createAdminClient } from '@/src/lib/supabaseAdmin'
 
 export interface CreateOrgResult {
   success: boolean

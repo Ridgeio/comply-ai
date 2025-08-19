@@ -1,6 +1,6 @@
 'use server';
 
-import { LlmProvider, MockLLM, type LlmResponse } from '@repo/shared/ai/provider';
+import { LlmProvider, MockLLM, type LlmResponse } from '@repo/shared';
 
 // Default fixtures for mock provider
 const DEFAULT_MOCK_FIXTURES: Record<string, LlmResponse> = {
@@ -38,7 +38,7 @@ class OpenAIProvider implements LlmProvider {
     }
   }
 
-  async classifySpecialProvisions({ text }: { text: string }): Promise<LlmResponse> {
+  async classifySpecialProvisions({ text: _text }: { text: string }): Promise<LlmResponse> {
     // Stub implementation - would call OpenAI API
     throw new Error('OpenAI provider not yet implemented. Use mock provider for testing.');
   }
@@ -51,32 +51,34 @@ class AnthropicProvider implements LlmProvider {
     }
   }
 
-  async classifySpecialProvisions({ text }: { text: string }): Promise<LlmResponse> {
+  async classifySpecialProvisions({ text: _text }: { text: string }): Promise<LlmResponse> {
     // Stub implementation - would call Anthropic API
     throw new Error('Anthropic provider not yet implemented. Use mock provider for testing.');
   }
 }
 
-export function createProvider(): LlmProvider {
+export async function createProvider(): Promise<LlmProvider> {
   const provider = process.env.AI_PROVIDER || 'mock';
   
   switch (provider) {
     case 'mock':
       return new MockLLM(DEFAULT_MOCK_FIXTURES);
     
-    case 'openai':
+    case 'openai': {
       const openaiKey = process.env.OPENAI_API_KEY;
       if (!openaiKey) {
         throw new Error('OPENAI_API_KEY environment variable required for OpenAI provider');
       }
       return new OpenAIProvider(openaiKey);
+    }
     
-    case 'anthropic':
+    case 'anthropic': {
       const anthropicKey = process.env.ANTHROPIC_API_KEY;
       if (!anthropicKey) {
         throw new Error('ANTHROPIC_API_KEY environment variable required for Anthropic provider');
       }
       return new AnthropicProvider(anthropicKey);
+    }
     
     default:
       throw new Error(`Unknown AI provider: ${provider}. Use 'mock', 'openai', or 'anthropic'.`);

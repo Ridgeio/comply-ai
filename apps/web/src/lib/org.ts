@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { supabaseServer } from './supabaseServer'
+
 import { createAdminClient } from './supabaseAdmin'
+import { supabaseServer } from './supabaseServer'
 
 /**
  * Get all memberships for the current authenticated user
@@ -13,7 +14,7 @@ export async function getMembershipsForUser() {
   if (!user) {
     redirect('/auth/sign-in')
     // For tests, we need to return something
-    return { user: null as any, memberships: [] }
+    return { user: null as never, memberships: [] }
   }
   
   // Use admin client for database queries
@@ -32,12 +33,12 @@ export async function getMembershipsForUser() {
  * Returns a valid orgId or redirects to /onboarding when none exist
  */
 export async function requireCurrentOrg(): Promise<string> {
-  const { user, memberships } = await getMembershipsForUser()
+  const { memberships } = await getMembershipsForUser()
   
   if (!memberships.length) {
     redirect('/onboarding')
     // For tests, we need to return something
-    return '' as any
+    return '' as never
   }
   
   const cookieStore = cookies()
@@ -90,7 +91,7 @@ export async function getCurrentOrgId(userId: string): Promise<string> {
  * Get all organizations with details for the current user
  */
 export async function getUserOrganizations() {
-  const { user, memberships } = await getMembershipsForUser()
+  const { memberships } = await getMembershipsForUser()
   
   if (!memberships.length) {
     return []

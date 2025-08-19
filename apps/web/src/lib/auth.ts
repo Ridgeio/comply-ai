@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+
 import { supabaseServer } from './supabaseServer'
 
 export async function requireUser() {

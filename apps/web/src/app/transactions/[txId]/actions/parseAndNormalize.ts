@@ -1,8 +1,7 @@
 'use server';
 
 import { toRawTrec20 } from '@repo/parsers';
-import { fromRawTrec20 } from '@repo/shared';
-import { createClient } from '@repo/shared/supabase/server';
+import { fromRawTrec20 , createClient } from '@repo/shared';
 
 /**
  * Development action to test PDF parsing and normalization pipeline

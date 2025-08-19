@@ -45,15 +45,16 @@ describe('Generate Report Flow', () => {
     const user = userEvent.setup()
     
     // Mock file list with completed job
-    mockListFilesWithJobStatus.mockResolvedValue([{
-      id: 'file-1',
-      path: 'transactions/org-123/tx-123/2025/01/15/contract.pdf',
-      name: 'contract.pdf',
-      uploaded_by: 'user-123',
-      created_at: '2025-01-15T10:00:00Z',
-      job_status: 'completed',
-      job_id: 'job-1'
-    }])
+    mockListFilesWithJobStatus.mockResolvedValue({
+      files: [{
+        id: 'file-1',
+        path: 'transactions/org-123/tx-123/2025/01/15/contract.pdf',
+        name: 'contract.pdf',
+        uploaded_by: 'user-123',
+        created_at: '2025-01-15T10:00:00Z',
+        job: { status: 'done' }
+      }]
+    })
 
     // Mock generate report response
     mockGenerateReport.mockResolvedValue({

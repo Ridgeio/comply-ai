@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+
 import { createAdminClient } from '@/src/lib/supabaseAdmin'
 
 export async function GET() {

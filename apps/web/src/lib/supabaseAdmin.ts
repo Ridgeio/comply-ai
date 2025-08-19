@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { checkSupabaseEnv, getServiceRoleKey } from '@repo/shared'
+import { createClient } from '@supabase/supabase-js'
 
 /**
  * Creates a Supabase admin client with service role privileges

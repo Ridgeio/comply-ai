@@ -1,8 +1,17 @@
 'use server'
 
-import { getAuthenticatedContext } from '@/src/lib/auth-helpers'
 import { buildStoragePath } from '@repo/shared'
 import { revalidatePath } from 'next/cache'
+
+import { getAuthenticatedContext } from '@/src/lib/auth-helpers'
+
+export interface UploadedFile {
+  id: string;
+  name: string;
+  path: string;
+  size: number;
+  extraction_mode?: 'acroform' | 'ocr';
+}
 
 export interface UploadResult {
   success: boolean
@@ -79,7 +88,7 @@ export async function uploadFiles(formData: FormData): Promise<UploadResult> {
         const blob = new Blob([arrayBuffer], { type: file.type })
 
         // Upload to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('transactions')
           .upload(storagePath, blob, {
             contentType: file.type,
@@ -175,7 +184,7 @@ export async function uploadFiles(formData: FormData): Promise<UploadResult> {
  */
 export async function getTransactionFiles(txId: string) {
   try {
-    const supabase = createAdminClient()
+    const { adminClient: supabase } = await getAuthenticatedContext()
     
     const { data: files, error } = await supabase
       .from('transaction_files')
@@ -205,4 +214,34 @@ export async function getTransactionFiles(txId: string) {
       error: error instanceof Error ? error.message : 'Failed to fetch files' 
     }
   }
+}
+
+// Enhanced upload function that returns extraction mode
+export async function uploadFilesEnhanced(
+  txId: string,
+  formData: FormData
+): Promise<{ files: UploadedFile[] }> {
+  const uploadFormData = new FormData();
+  uploadFormData.append('txId', txId);
+  
+  // Transfer files from incoming formData
+  const files = formData.getAll('files');
+  files.forEach(file => uploadFormData.append('files', file));
+  
+  const result = await uploadFiles(uploadFormData);
+  
+  if (!result.success || !result.files) {
+    throw new Error(result.error || 'Upload failed');
+  }
+  
+  // Map to UploadedFile format
+  return {
+    files: result.files.map(f => ({
+      id: f.fileId,
+      name: f.name,
+      path: f.path,
+      size: 0, // Will be filled by the actual implementation
+      extraction_mode: undefined // Will be determined during processing
+    }))
+  };
 }

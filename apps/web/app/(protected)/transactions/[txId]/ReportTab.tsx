@@ -1,13 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { FileText, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { getLatestReportWithIssues } from '@/src/app/transactions/[txId]/actions/reportActions'
-import { ReportSummary } from './report/ReportSummary'
+import { useState, useEffect } from 'react'
+
+
 import { IssuesTable } from './report/IssuesTable'
+import { ReportSummary } from './report/ReportSummary'
+import { VersionWarning } from './report/VersionWarning'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { FileText, Loader2 } from 'lucide-react'
+import { getLatestReportWithIssues } from '@/src/app/transactions/[txId]/actions/reportActions'
+
 
 interface ReportTabProps {
   txId: string
@@ -70,6 +75,8 @@ export function ReportTab({ txId }: ReportTabProps) {
           Generated: {new Date(reportData.report.created_at).toLocaleDateString()}
         </p>
       </div>
+
+      <VersionWarning issues={reportData.issues} />
 
       <ReportSummary countsBySeverity={reportData.countsBySeverity} />
       

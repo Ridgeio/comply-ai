@@ -1,186 +1,195 @@
 'use client';
 
-import { useState } from 'react';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Edit2, Save, X, AlertCircle } from 'lucide-react';
-import { updateFormRegistry } from '@/src/app/settings/forms/actions';
-import type { FormRegistryRow } from '@/src/app/settings/forms/actions';
+import { Pencil } from 'lucide-react';
+import React, { useState } from 'react';
 
-interface FormsTableProps {
-  forms: FormRegistryRow[];
-  isAdmin: boolean;
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/components/ui/use-toast';
+import { updateFormRegistry } from '@/src/app/settings/forms/actions';
+
+interface FormRegistryEntry {
+  form_code: string;
+  expected_version: string;
+  effective_date: string | null;
+  updated_at: string;
 }
 
-export function FormsTable({ forms, isAdmin }: FormsTableProps) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{
-    expected_version: string;
-    effective_date: string | null;
-  }>({ expected_version: '', effective_date: null });
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+interface FormsTableProps {
+  forms: FormRegistryEntry[];
+  userRole: string;
+}
 
-  const handleEdit = (form: FormRegistryRow) => {
-    setEditingId(form.id);
-    setEditValues({
+export function FormsTable({ forms, userRole }: FormsTableProps) {
+  const [editingForm, setEditingForm] = useState<FormRegistryEntry | null>(null);
+  const [formValues, setFormValues] = useState({ expected_version: '', effective_date: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const isAdmin = userRole === 'broker_admin';
+
+  const handleEdit = (form: FormRegistryEntry) => {
+    setEditingForm(form);
+    setFormValues({
       expected_version: form.expected_version,
-      effective_date: form.effective_date
+      effective_date: form.effective_date || ''
     });
     setError(null);
   };
 
   const handleCancel = () => {
-    setEditingId(null);
-    setEditValues({ expected_version: '', effective_date: null });
+    setEditingForm(null);
+    setFormValues({ expected_version: '', effective_date: '' });
     setError(null);
   };
 
-  const handleSave = async (formCode: string) => {
-    setSaving(true);
+  const handleSave = async () => {
+    if (!editingForm) return;
+
+    setIsSubmitting(true);
     setError(null);
-    
+
     try {
-      await updateFormRegistry(formCode, editValues);
-      setEditingId(null);
-      // In a real app, you'd refresh the data here
-      // Only reload in browser environment, not in tests
-      if (typeof window !== 'undefined' && window.location && !window.location.href.includes('jsdom')) {
-        window.location.reload();
+      const updates: { expected_version?: string; effective_date?: string | null } = {};
+      
+      if (formValues.expected_version !== editingForm.expected_version) {
+        updates.expected_version = formValues.expected_version;
+      }
+      
+      if (formValues.effective_date !== (editingForm.effective_date || '')) {
+        updates.effective_date = formValues.effective_date || null;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateFormRegistry(editingForm.form_code, updates);
+        toast({
+          title: 'Success',
+          description: `Form ${editingForm.form_code} updated successfully`
+        });
+        
+        handleCancel();
+        // Reload only in browser environment, not in tests
+        if (typeof window !== 'undefined' && typeof window.location.reload === 'function') {
+          try {
+            window.location.reload();
+          } catch (e) {
+            // Ignore errors in test environment
+            console.log('Reload skipped in test environment');
+          }
+        }
+      } else {
+        handleCancel();
       }
     } catch (err) {
       setError('Failed to update form registry');
-      console.error(err);
+      console.error('Update failed:', err);
     } finally {
-      setSaving(false);
+      setIsSubmitting(false);
     }
   };
 
-  const formatDate = (date: string | null) => {
-    if (!date) return 'Not set';
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Not set';
     try {
-      return format(new Date(date), 'MMM d, yyyy');
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      return format(date, 'MMM d, yyyy');
     } catch {
-      return date;
+      return dateString;
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Forms Registry</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Form Code</TableHead>
-              <TableHead>Expected Version</TableHead>
-              <TableHead>Effective Date</TableHead>
-              <TableHead>Last Updated</TableHead>
-              {isAdmin && <TableHead>Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {forms.map((form) => {
-              const isEditing = editingId === form.id;
-              
-              return (
-                <TableRow key={form.id}>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Forms Registry</CardTitle>
+          {!isAdmin && <Badge variant="secondary">Read-only</Badge>}
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Form Code</TableHead>
+                <TableHead>Expected Version</TableHead>
+                <TableHead>Effective Date</TableHead>
+                <TableHead>Last Updated</TableHead>
+                {isAdmin && <TableHead className="w-[100px]">Actions</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {forms.map((form) => (
+                <TableRow key={form.form_code}>
                   <TableCell className="font-medium">{form.form_code}</TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input
-                        value={editValues.expected_version}
-                        onChange={(e) => setEditValues({
-                          ...editValues,
-                          expected_version: e.target.value
-                        })}
-                        className="w-32"
-                        disabled={saving}
-                      />
-                    ) : (
-                      <span className="font-mono">{form.expected_version}</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input
-                        type="date"
-                        value={editValues.effective_date || ''}
-                        onChange={(e) => setEditValues({
-                          ...editValues,
-                          effective_date: e.target.value || null
-                        })}
-                        placeholder="YYYY-MM-DD"
-                        className="w-36"
-                        disabled={saving}
-                      />
-                    ) : (
-                      formatDate(form.effective_date)
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {format(new Date(form.updated_at), 'MMM d, yyyy')}
-                  </TableCell>
+                  <TableCell>{form.expected_version}</TableCell>
+                  <TableCell>{formatDate(form.effective_date)}</TableCell>
+                  <TableCell>{formatDate(form.updated_at)}</TableCell>
                   {isAdmin && (
                     <TableCell>
-                      {isEditing ? (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => handleSave(form.form_code)}
-                            disabled={saving}
-                          >
-                            <Save className="h-3 w-3 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCancel}
-                            disabled={saving}
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(form)}
-                        >
-                          <Edit2 className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(form)}
+                      >
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
                     </TableCell>
                   )}
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-        
-        {forms.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            No forms registered yet
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!editingForm} onOpenChange={(open) => !open && handleCancel()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {editingForm?.form_code}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="expected_version">Expected Version</Label>
+              <Input
+                id="expected_version"
+                value={formValues.expected_version}
+                onChange={(e) => setFormValues({ ...formValues, expected_version: e.target.value })}
+                placeholder="e.g., 20-18"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="effective_date">Effective Date</Label>
+              <Input
+                id="effective_date"
+                type="date"
+                value={formValues.effective_date}
+                onChange={(e) => setFormValues({ ...formValues, effective_date: e.target.value })}
+              />
+            </div>
+            {error && (
+              <div className="text-sm text-destructive">{error}</div>
+            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

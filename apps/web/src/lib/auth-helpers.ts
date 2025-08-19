@@ -1,6 +1,7 @@
-import { supabaseServer } from './supabaseServer'
-import { createAdminClient } from './supabaseAdmin'
 import type { User } from '@supabase/supabase-js'
+
+import { createAdminClient } from './supabaseAdmin'
+import { supabaseServer } from './supabaseServer'
 
 /**
  * Gets the authenticated user and returns both the user and an admin client

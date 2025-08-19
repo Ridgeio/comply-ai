@@ -1,10 +1,12 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { User, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+
+import { Button } from '@/components/ui/button'
 import { supabaseClient } from '@/src/lib/supabaseClient'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
+
 
 interface UserNavProps {
   user: SupabaseUser

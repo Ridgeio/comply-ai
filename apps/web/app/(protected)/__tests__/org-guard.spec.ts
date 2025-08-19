@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({

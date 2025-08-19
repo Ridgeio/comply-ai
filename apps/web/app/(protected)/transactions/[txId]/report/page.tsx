@@ -1,10 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { Issue } from '@repo/shared';
 import { 
   RefreshCw, 
   Download, 
@@ -14,11 +10,18 @@ import {
   AlertCircle,
   ArrowLeft
 } from 'lucide-react';
-import { ReportSummary } from './ReportSummary';
+import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
 import { IssuesTable } from './IssuesTable';
-import { generateReport } from '@/src/app/transactions/[txId]/actions/generateReport';
+import { ReportSummary } from './ReportSummary';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { fetchReport } from '@/src/app/transactions/[txId]/actions/fetchReport';
-import type { Issue } from '@repo/shared';
+import { generateReport } from '@/src/app/transactions/[txId]/actions/generateReport';
+
 
 export default function ReportPage() {
   const params = useParams();

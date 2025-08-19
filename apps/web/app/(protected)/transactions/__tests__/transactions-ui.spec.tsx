@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import TransactionsPage from '../page'
-import { NewTransactionModal } from '../NewTransactionModal'
+
 import { createTransaction } from '@/src/app/transactions/actions'
 
 // Mock Next.js navigation

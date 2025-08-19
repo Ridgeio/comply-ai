@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { AlertCircle, Building2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createOrganizationForCurrentUser } from '@/src/app/onboarding/actions'
+import { useState } from 'react'
+
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, Building2 } from 'lucide-react'
+import { createOrganizationForCurrentUser } from '@/src/app/onboarding/actions'
+
 
 export function CreateOrgForm() {
   const router = useRouter()

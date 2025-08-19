@@ -1,11 +1,11 @@
 'use server'
 
+import { analyzeSpecialProvisions, buildRegistry } from '@repo/shared'
+import { z } from 'zod'
+
+import { createProvider } from '@/src/lib/ai/provider'
 import { getAuthenticatedContext } from '@/src/lib/auth-helpers'
 import { requireCurrentOrg } from '@/src/lib/org'
-import { createProvider } from '@/src/lib/ai/provider'
-import { analyzeSpecialProvisions } from '@repo/shared/ai/specialProvisions'
-import { buildRegistry } from '@repo/shared/rules/formsRegistry'
-import { z } from 'zod'
 
 // Types
 export interface ComplianceIssue {
@@ -128,7 +128,7 @@ async function generateDevStubIssues(
   // Add AI analysis for special provisions if text is provided
   if (specialProvisionsText) {
     try {
-      const provider = createProvider();
+      const provider = await createProvider();
       const aiResult = await analyzeSpecialProvisions(specialProvisionsText, provider);
       
       // Map AI classification to severity
@@ -168,7 +168,7 @@ export async function generateReport(input: z.infer<typeof generateReportSchema>
   try {
     const { txId, primaryFileId } = generateReportSchema.parse(input)
     
-    const { user, adminClient: supabase } = await getAuthenticatedContext()
+    const { user: _user, adminClient: supabase } = await getAuthenticatedContext()
     const orgId = await requireCurrentOrg()
 
     // Verify transaction belongs to user's org
@@ -271,7 +271,7 @@ export async function generateReport(input: z.infer<typeof generateReportSchema>
 
 export async function getLatestReportWithIssues(txId: string): Promise<ReportWithIssues | null> {
   try {
-    const { user, adminClient: supabase } = await getAuthenticatedContext()
+    const { user: _user, adminClient: supabase } = await getAuthenticatedContext()
     const orgId = await requireCurrentOrg()
 
     // Verify transaction belongs to user's org

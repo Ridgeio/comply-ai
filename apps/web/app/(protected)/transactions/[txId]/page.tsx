@@ -1,5 +1,6 @@
-import { getTransaction } from '@/src/app/transactions/actions'
 import { TransactionDetailClient } from './TransactionDetailClient'
+
+import { getTransaction } from '@/src/app/transactions/actions'
 
 interface TransactionDetailPageProps {
   params: {

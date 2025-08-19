@@ -1,7 +1,6 @@
 'use server'
 
 import { createAdminClient } from '@/src/lib/supabaseAdmin'
-import type { User } from '@supabase/supabase-js'
 
 export async function onboardAfterSignup(userId: string) {
   try {

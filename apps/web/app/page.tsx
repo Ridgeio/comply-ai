@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+
 import { supabaseServer } from '@/src/lib/supabaseServer'
 
 export default async function RootPage() {

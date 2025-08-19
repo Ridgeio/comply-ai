@@ -1,6 +1,6 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@repo/shared/types/supabase';
 import type { Issue } from '@repo/shared';
+import type { Database } from '@repo/shared/types/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type Report = Database['public']['Tables']['reports']['Row'];
 export type DbIssue = Database['public']['Tables']['issues']['Row'];
@@ -11,8 +11,8 @@ export async function insertReport(
     transaction_id: string;
     org_id: string;
     file_id: string;
-    summary: Record<string, any>;
-    metadata?: Record<string, any>;
+    summary: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
   }
 ) {
   const { data: report, error } = await supabase

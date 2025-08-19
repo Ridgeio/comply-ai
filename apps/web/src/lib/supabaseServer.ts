@@ -1,6 +1,6 @@
+import type { Database } from '@repo/shared/types/supabase'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import type { Database } from '@repo/shared/types/supabase'
 
 export function supabaseServer() {
   const cookieStore = cookies()

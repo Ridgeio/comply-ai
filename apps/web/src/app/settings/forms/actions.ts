@@ -1,67 +1,54 @@
 'use server';
 
-import { supabaseServer } from '@/src/lib/supabaseServer';
 import { getAuthenticatedContext } from '@/src/lib/auth-helpers';
-import { revalidatePath } from 'next/cache';
 
-export interface FormRegistryRow {
-  id: string;
-  form_code: string;
-  expected_version: string;
-  effective_date: string | null;
-  updated_at: string;
+export async function updateFormRegistry(
+  formCode: string,
+  values: { expected_version?: string; effective_date?: string | null }
+) {
+  const { adminClient: supabase, user } = await getAuthenticatedContext();
+
+  // Check if user has broker_admin role
+  const { data: membership } = await supabase
+    .from('organization_memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .single();
+
+  if (membership?.role !== 'broker_admin') {
+    throw new Error('Unauthorized: Only broker admins can update the forms registry');
+  }
+
+  // Update the forms registry
+  const updateData: any = {};
+  if (values.expected_version !== undefined) {
+    updateData.expected_version = values.expected_version;
+  }
+  if (values.effective_date !== undefined) {
+    updateData.effective_date = values.effective_date;
+  }
+
+  const { error } = await supabase
+    .from('forms_registry')
+    .update(updateData)
+    .eq('form_code', formCode);
+
+  if (error) {
+    throw new Error(`Failed to update form registry: ${error.message}`);
+  }
 }
 
-/**
- * Get all forms from the registry
- */
-export async function getFormsRegistry(): Promise<FormRegistryRow[]> {
-  const supabase = supabaseServer();
-  
+export async function fetchFormsRegistry() {
+  const { adminClient: supabase } = await getAuthenticatedContext();
+
   const { data, error } = await supabase
     .from('forms_registry')
     .select('*')
     .order('form_code');
-  
-  if (error) {
-    console.error('Failed to fetch forms registry:', error);
-    throw new Error('Failed to load forms registry');
-  }
-  
-  return data || [];
-}
 
-/**
- * Update a form's expected version or effective date
- * Only accessible to broker_admin users
- */
-export async function updateFormRegistry(
-  formCode: string, 
-  values: { 
-    expected_version?: string; 
-    effective_date?: string | null 
-  }
-): Promise<void> {
-  const { user } = await getAuthenticatedContext();
-  
-  // TODO: Check if user is broker_admin
-  // For now, we'll allow any authenticated user (you should add proper role checking)
-  
-  const supabase = supabaseServer();
-  
-  const { error } = await supabase
-    .from('forms_registry')
-    .update({
-      ...values,
-      updated_at: new Date().toISOString()
-    })
-    .eq('form_code', formCode);
-  
   if (error) {
-    console.error('Failed to update form registry:', error);
-    throw new Error('Failed to update form registry');
+    throw new Error(`Failed to fetch forms registry: ${error.message}`);
   }
-  
-  // Revalidate the settings page
-  revalidatePath('/settings/forms');
+
+  return data || [];
 }

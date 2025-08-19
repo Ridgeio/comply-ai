@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+
 import '@testing-library/jest-dom'
 import { FilesTab } from '../FilesTab'
 
@@ -36,26 +37,22 @@ vi.mock('react-dropzone', () => ({
 
 describe('Scanned Mode Banner', () => {
   it('should show scanned mode banner when file has OCR extraction mode', async () => {
-    const { listFilesWithJobStatus } = await import('@/src/app/transactions/[txId]/actions/fileActions')
-    
-    // Mock files with OCR extraction mode
-    vi.mocked(listFilesWithJobStatus).mockResolvedValue([
+    const mockFiles = [
       {
         id: 'file-1',
         path: 'path/to/file.pdf',
         name: 'contract.pdf',
         uploaded_by: 'user-123',
         created_at: '2025-01-15T10:00:00Z',
-        job_status: 'completed',
-        job_id: 'job-1',
-        extraction_mode: 'ocr' // This indicates OCR was used
+        extraction_mode: 'ocr' as const,
+        job: { status: 'done' as const }
       }
-    ])
+    ]
     
-    render(<FilesTab txId="tx-123" />)
+    render(<FilesTab txId="tx-123" initialFiles={mockFiles} />)
     
-    // Wait for the banner to appear
-    const banner = await screen.findByText(/Scanned mode may reduce accuracy/i)
+    // Banner should appear immediately
+    const banner = screen.getByText(/Scanned mode may reduce accuracy/i)
     expect(banner).toBeInTheDocument()
     
     // Verify it's in an alert component
@@ -64,26 +61,22 @@ describe('Scanned Mode Banner', () => {
   })
   
   it('should not show banner when file uses AcroForm extraction', async () => {
-    const { listFilesWithJobStatus } = await import('@/src/app/transactions/[txId]/actions/fileActions')
-    
-    // Mock files with AcroForm extraction mode
-    vi.mocked(listFilesWithJobStatus).mockResolvedValue([
+    const mockFiles = [
       {
         id: 'file-2',
         path: 'path/to/file.pdf',
         name: 'contract.pdf',
         uploaded_by: 'user-123',
         created_at: '2025-01-15T10:00:00Z',
-        job_status: 'completed',
-        job_id: 'job-2',
-        extraction_mode: 'acroform'
+        extraction_mode: 'acroform' as const,
+        job: { status: 'done' as const }
       }
-    ])
+    ]
     
-    render(<FilesTab txId="tx-123" />)
+    render(<FilesTab txId="tx-123" initialFiles={mockFiles} />)
     
-    // Wait for files to load
-    await screen.findByText('contract.pdf')
+    // Files should be immediately visible
+    expect(screen.getByText('contract.pdf')).toBeInTheDocument()
     
     // Banner should not be present
     const banner = screen.queryByText(/Scanned mode may reduce accuracy/i)
@@ -91,26 +84,22 @@ describe('Scanned Mode Banner', () => {
   })
   
   it('should not show banner when extraction mode is not set', async () => {
-    const { listFilesWithJobStatus } = await import('@/src/app/transactions/[txId]/actions/fileActions')
-    
-    // Mock files without extraction mode
-    vi.mocked(listFilesWithJobStatus).mockResolvedValue([
+    const mockFiles = [
       {
         id: 'file-3',
         path: 'path/to/file.pdf',
         name: 'contract.pdf',
         uploaded_by: 'user-123',
         created_at: '2025-01-15T10:00:00Z',
-        job_status: 'completed',
-        job_id: 'job-3',
-        extraction_mode: undefined
+        extraction_mode: undefined,
+        job: { status: 'done' }
       }
-    ])
+    ]
     
-    render(<FilesTab txId="tx-123" />)
+    render(<FilesTab txId="tx-123" initialFiles={mockFiles} />)
     
-    // Wait for files to load
-    await screen.findByText('contract.pdf')
+    // Files should be immediately visible
+    expect(screen.getByText('contract.pdf')).toBeInTheDocument()
     
     // Banner should not be present
     const banner = screen.queryByText(/Scanned mode may reduce accuracy/i)

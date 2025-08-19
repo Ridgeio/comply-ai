@@ -1,171 +1,245 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { FormsTable } from '../FormsTable';
+
 import { updateFormRegistry } from '@/src/app/settings/forms/actions';
 
-// Mock the server action
+// Mock server action
 vi.mock('@/src/app/settings/forms/actions', () => ({
   updateFormRegistry: vi.fn()
 }));
 
+// Mock toast hook
+vi.mock('@/components/ui/use-toast', () => ({
+  useToast: () => ({
+    toast: vi.fn()
+  })
+}));
+
 describe('Forms Registry UI', () => {
-  const mockForms = [
+  const mockFormsData = [
     {
-      id: '1',
       form_code: 'TREC-20',
       expected_version: '20-18',
-      effective_date: '2025-01-03',
-      updated_at: '2025-01-01T00:00:00Z'
+      effective_date: '2024-01-01',
+      updated_at: '2025-01-17T10:00:00Z'
     },
     {
-      id: '2',
-      form_code: 'TREC-40-11',
+      form_code: 'TREC-40',
       expected_version: '40-11',
+      effective_date: '2024-06-01',
+      updated_at: '2025-01-17T10:00:00Z'
+    },
+    {
+      form_code: 'TREC-36',
+      expected_version: '36-10',
       effective_date: null,
-      updated_at: '2025-01-01T00:00:00Z'
+      updated_at: '2025-01-17T10:00:00Z'
     }
   ];
 
-  describe('display mode', () => {
-    it('should render forms registry table', () => {
-      render(<FormsTable forms={mockForms} isAdmin={false} />);
-      
-      expect(screen.getByText('TREC-20')).toBeInTheDocument();
-      expect(screen.getByText('20-18')).toBeInTheDocument();
-      expect(screen.getByText('TREC-40-11')).toBeInTheDocument();
-      expect(screen.getByText('40-11')).toBeInTheDocument();
-    });
-
-    it('should display effective dates', () => {
-      render(<FormsTable forms={mockForms} isAdmin={false} />);
-      
-      // Check that dates are displayed (exact format may vary)
-      const dateCells = screen.getAllByText((content, element) => {
-        return element?.tagName.toLowerCase() === 'td' && 
-               (content.includes('2025') || content === 'Not set');
-      });
-      expect(dateCells.length).toBeGreaterThan(0);
-      expect(dateCells[0]).toBeInTheDocument();
-    });
-
-    it('should not show edit buttons for non-admin', () => {
-      render(<FormsTable forms={mockForms} isAdmin={false} />);
-      
-      expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  describe('edit mode (broker_admin)', () => {
-    it('should show edit buttons for admin', () => {
-      render(<FormsTable forms={mockForms} isAdmin={true} />);
+  describe('FormsTable Component', () => {
+    it('should display all forms in a table', () => {
+      render(<FormsTable forms={mockFormsData} userRole="viewer" />);
       
-      const editButtons = screen.getAllByRole('button', { name: /edit/i });
-      expect(editButtons).toHaveLength(mockForms.length);
+      // Check table headers
+      expect(screen.getByText('Form Code')).toBeInTheDocument();
+      expect(screen.getByText('Expected Version')).toBeInTheDocument();
+      expect(screen.getByText('Effective Date')).toBeInTheDocument();
+      expect(screen.getByText('Last Updated')).toBeInTheDocument();
+      
+      // Check form data
+      expect(screen.getByText('TREC-20')).toBeInTheDocument();
+      expect(screen.getByText('20-18')).toBeInTheDocument();
+      // Check that date is displayed (format might vary)
+      expect(screen.getByText((content, element) => {
+        return element?.tagName?.toLowerCase() === 'td' && 
+               content.includes('2024');
+      })).toBeInTheDocument();
+      
+      expect(screen.getByText('TREC-40')).toBeInTheDocument();
+      expect(screen.getByText('40-11')).toBeInTheDocument();
+      // Check that another date is displayed
+      const allDateCells = screen.getAllByText((content, element) => {
+        return element?.tagName?.toLowerCase() === 'td' && 
+               (content.includes('2024') || content.includes('2025'));
+      });
+      expect(allDateCells.length).toBeGreaterThanOrEqual(1);
+      
+      expect(screen.getByText('TREC-36')).toBeInTheDocument();
+      expect(screen.getByText('36-10')).toBeInTheDocument();
     });
 
-    it('should enable inline editing on edit click', async () => {
-      render(<FormsTable forms={mockForms} isAdmin={true} />);
+    it('should show edit buttons for broker_admin role', () => {
+      render(<FormsTable forms={mockFormsData} userRole="broker_admin" />);
       
+      // Should have edit buttons for each row
       const editButtons = screen.getAllByRole('button', { name: /edit/i });
-      fireEvent.click(editButtons[0]);
-      
-      // Should show input fields - check by role instead of value
-      const inputs = screen.getAllByRole('textbox');
-      expect(inputs.length).toBeGreaterThan(0);
-      
-      // Should show save/cancel buttons
-      expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+      expect(editButtons).toHaveLength(3);
     });
 
-    it('should call updateFormRegistry on save', async () => {
-      const mockUpdate = vi.mocked(updateFormRegistry);
-      mockUpdate.mockResolvedValueOnce(undefined);
+    it('should not show edit buttons for non-admin roles', () => {
+      render(<FormsTable forms={mockFormsData} userRole="viewer" />);
       
-      render(<FormsTable forms={mockForms} isAdmin={true} />);
+      // Should not have any edit buttons
+      const editButtons = screen.queryAllByRole('button', { name: /edit/i });
+      expect(editButtons).toHaveLength(0);
+    });
+
+    it('should open edit dialog when edit button clicked', async () => {
+      render(<FormsTable forms={mockFormsData} userRole="broker_admin" />);
       
-      // Click edit
       const editButtons = screen.getAllByRole('button', { name: /edit/i });
-      fireEvent.click(editButtons[0]);
+      fireEvent.click(editButtons[0]); // Edit TREC-20
       
-      // Change version
-      const versionInput = screen.getByDisplayValue('20-18');
+      // Dialog should open
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Edit TREC-20')).toBeInTheDocument();
+      });
+      
+      // Should have form fields
+      expect(screen.getByLabelText(/expected version/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/effective date/i)).toBeInTheDocument();
+    });
+
+    it('should call updateFormRegistry when form submitted', async () => {
+      render(<FormsTable forms={mockFormsData} userRole="broker_admin" />);
+      
+      const editButtons = screen.getAllByRole('button', { name: /edit/i });
+      fireEvent.click(editButtons[0]); // Edit TREC-20
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      // Update version
+      const versionInput = screen.getByLabelText(/expected version/i);
       fireEvent.change(versionInput, { target: { value: '20-19' } });
       
-      // Click save
+      // Submit form
       const saveButton = screen.getByRole('button', { name: /save/i });
       fireEvent.click(saveButton);
       
       await waitFor(() => {
-        expect(mockUpdate).toHaveBeenCalledWith('TREC-20', {
-          expected_version: '20-19',
-          effective_date: '2025-01-03'
+        expect(updateFormRegistry).toHaveBeenCalledWith('TREC-20', {
+          expected_version: '20-19'
         });
       });
     });
 
-    it('should handle date changes', async () => {
-      const mockUpdate = vi.mocked(updateFormRegistry);
-      mockUpdate.mockResolvedValueOnce(undefined);
+    it('should update effective date via dialog', async () => {
+      render(<FormsTable forms={mockFormsData} userRole="broker_admin" />);
       
-      render(<FormsTable forms={mockForms} isAdmin={true} />);
-      
-      // Click edit on second form (no date)
       const editButtons = screen.getAllByRole('button', { name: /edit/i });
-      fireEvent.click(editButtons[1]);
+      fireEvent.click(editButtons[2]); // Edit TREC-36 (has null effective_date)
       
-      // Add a date
-      const dateInput = screen.getByPlaceholderText('YYYY-MM-DD');
-      fireEvent.change(dateInput, { target: { value: '2025-06-01' } });
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
       
-      // Click save
+      // Set effective date
+      const dateInput = screen.getByLabelText(/effective date/i);
+      fireEvent.change(dateInput, { target: { value: '2025-01-01' } });
+      
+      // Submit form
       const saveButton = screen.getByRole('button', { name: /save/i });
       fireEvent.click(saveButton);
       
       await waitFor(() => {
-        expect(mockUpdate).toHaveBeenCalledWith('TREC-40-11', {
-          expected_version: '40-11',
-          effective_date: '2025-06-01'
+        expect(updateFormRegistry).toHaveBeenCalledWith('TREC-36', {
+          effective_date: '2025-01-01'
         });
       });
     });
 
-    it('should cancel editing on cancel click', () => {
-      render(<FormsTable forms={mockForms} isAdmin={true} />);
+    it('should close dialog after successful save', async () => {
+      vi.mocked(updateFormRegistry).mockResolvedValueOnce(undefined);
       
-      // Click edit
+      render(<FormsTable forms={mockFormsData} userRole="broker_admin" />);
+      
       const editButtons = screen.getAllByRole('button', { name: /edit/i });
       fireEvent.click(editButtons[0]);
       
-      // Change version
-      const versionInput = screen.getByDisplayValue('20-18');
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      const versionInput = screen.getByLabelText(/expected version/i);
       fireEvent.change(versionInput, { target: { value: '20-19' } });
       
-      // Click cancel
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      fireEvent.click(saveButton);
+      
+      // Dialog should close after save
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show error message if save fails', async () => {
+      vi.mocked(updateFormRegistry).mockRejectedValueOnce(new Error('Update failed'));
+      
+      render(<FormsTable forms={mockFormsData} userRole="broker_admin" />);
+      
+      const editButtons = screen.getAllByRole('button', { name: /edit/i });
+      fireEvent.click(editButtons[0]);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
+      const versionInput = screen.getByLabelText(/expected version/i);
+      fireEvent.change(versionInput, { target: { value: '20-19' } });
+      
+      const saveButton = screen.getByRole('button', { name: /save/i });
+      fireEvent.click(saveButton);
+      
+      // Should show error message - Dialog should remain open with error
+      await waitFor(() => {
+        // Dialog should remain open
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        // Error message should be visible
+        expect(screen.getByText('Failed to update form registry')).toBeInTheDocument();
+      });
+    });
+
+    it('should allow canceling edit dialog', async () => {
+      render(<FormsTable forms={mockFormsData} userRole="broker_admin" />);
+      
+      const editButtons = screen.getAllByRole('button', { name: /edit/i });
+      fireEvent.click(editButtons[0]);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      
       const cancelButton = screen.getByRole('button', { name: /cancel/i });
       fireEvent.click(cancelButton);
       
-      // Should revert to display mode with original value
-      expect(screen.getByText('20-18')).toBeInTheDocument();
-      expect(screen.queryByDisplayValue('20-19')).not.toBeInTheDocument();
+      // Dialog should close without calling updateFormRegistry
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+      
+      expect(updateFormRegistry).not.toHaveBeenCalled();
     });
 
-    it('should show error message on update failure', async () => {
-      const mockUpdate = vi.mocked(updateFormRegistry);
-      mockUpdate.mockRejectedValueOnce(new Error('Update failed'));
+    it('should display read-only badge for viewer role', () => {
+      render(<FormsTable forms={mockFormsData} userRole="viewer" />);
       
-      render(<FormsTable forms={mockForms} isAdmin={true} />);
+      expect(screen.getByText('Read-only')).toBeInTheDocument();
+    });
+
+    it('should not display read-only badge for broker_admin', () => {
+      render(<FormsTable forms={mockFormsData} userRole="broker_admin" />);
       
-      // Click edit and save
-      const editButtons = screen.getAllByRole('button', { name: /edit/i });
-      fireEvent.click(editButtons[0]);
-      
-      const saveButton = screen.getByRole('button', { name: /save/i });
-      fireEvent.click(saveButton);
-      
-      await waitFor(() => {
-        expect(screen.getByText(/failed to update/i)).toBeInTheDocument();
-      });
+      expect(screen.queryByText('Read-only')).not.toBeInTheDocument();
     });
   });
 });

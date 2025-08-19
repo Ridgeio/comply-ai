@@ -2,19 +2,28 @@ import { describe, it, expect } from 'vitest';
 import { runRules } from '../engine';
 import { trec20Rules } from '../rules-trec20';
 import { makeTrec20 } from '../../test/factories';
+import type { FormsRegistry } from '../formsRegistry';
 
 describe('TREC-20 Rules', () => {
+  // Default registry for testing
+  const defaultRegistry: FormsRegistry = {
+    'TREC-20': {
+      expected_version: '20-18',
+      effective_date: null
+    }
+  };
+
   describe('Rule #2: Version outdated', () => {
     it('should pass when version is 20-18', () => {
       const trec = makeTrec20({ formVersion: '20-18' });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const versionIssues = issues.filter(i => i.id === 'trec20.version.outdated');
       expect(versionIssues).toHaveLength(0);
     });
 
     it('should fail when version is not 20-18', () => {
       const trec = makeTrec20({ formVersion: '20-17' });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const versionIssue = issues.find(i => i.id === 'trec20.version.outdated');
       expect(versionIssue).toBeDefined();
       expect(versionIssue?.severity).toBe('high');
@@ -30,7 +39,7 @@ describe('TREC-20 Rules', () => {
           totalCents: 30000000,
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const sumIssues = issues.filter(i => i.id === 'trec20.price.sum.mismatch');
       expect(sumIssues).toHaveLength(0);
     });
@@ -43,7 +52,7 @@ describe('TREC-20 Rules', () => {
           totalCents: 30000000,
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const sumIssues = issues.filter(i => i.id === 'trec20.price.sum.mismatch');
       expect(sumIssues).toHaveLength(0);
     });
@@ -56,7 +65,7 @@ describe('TREC-20 Rules', () => {
           totalCents: 30000000,
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const sumIssue = issues.find(i => i.id === 'trec20.price.sum.mismatch');
       expect(sumIssue).toBeDefined();
       expect(sumIssue?.severity).toBe('high');
@@ -73,7 +82,7 @@ describe('TREC-20 Rules', () => {
           totalCents: 30000000,
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const financeIssues = issues.filter(i => i.id === 'trec20.financing.missing');
       expect(financeIssues).toHaveLength(0);
     });
@@ -87,7 +96,7 @@ describe('TREC-20 Rules', () => {
           totalCents: 30000000,
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const financeIssue = issues.find(i => i.id === 'trec20.financing.missing');
       expect(financeIssue).toBeDefined();
       expect(financeIssue?.severity).toBe('high');
@@ -100,7 +109,7 @@ describe('TREC-20 Rules', () => {
         effectiveDate: '2025-01-03',
         closingDate: '2025-02-01',
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const dateIssues = issues.filter(i => i.id === 'trec20.dates.order');
       expect(dateIssues).toHaveLength(0);
     });
@@ -110,7 +119,7 @@ describe('TREC-20 Rules', () => {
         effectiveDate: '2025-02-01',
         closingDate: '2025-02-01',
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const dateIssues = issues.filter(i => i.id === 'trec20.dates.order');
       expect(dateIssues).toHaveLength(0);
     });
@@ -120,7 +129,7 @@ describe('TREC-20 Rules', () => {
         effectiveDate: '2025-02-15',
         closingDate: '2025-02-01',
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const dateIssue = issues.find(i => i.id === 'trec20.dates.order');
       expect(dateIssue).toBeDefined();
       expect(dateIssue?.severity).toBe('high');
@@ -135,7 +144,7 @@ describe('TREC-20 Rules', () => {
         optionFeeCents: 20000,
         optionPeriodDays: 7, // Ends 2025-01-10
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const optionIssues = issues.filter(i => i.id === 'trec20.option.end.late');
       expect(optionIssues).toHaveLength(0);
     });
@@ -147,7 +156,7 @@ describe('TREC-20 Rules', () => {
         optionFeeCents: 20000,
         optionPeriodDays: 10, // Ends 2025-01-13
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const optionIssue = issues.find(i => i.id === 'trec20.option.end.late');
       expect(optionIssue).toBeDefined();
       expect(optionIssue?.severity).toBe('medium');
@@ -159,7 +168,7 @@ describe('TREC-20 Rules', () => {
       const trec = makeTrec20({
         closingDate: '2025-02-04', // Tuesday Feb 4, 2025
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const weekendIssues = issues.filter(i => i.id === 'trec20.closing.weekend');
       expect(weekendIssues).toHaveLength(0);
     });
@@ -168,7 +177,7 @@ describe('TREC-20 Rules', () => {
       const trec = makeTrec20({
         closingDate: '2025-02-08', // Saturday Feb 8, 2025
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const weekendIssue = issues.find(i => i.id === 'trec20.closing.weekend');
       expect(weekendIssue).toBeDefined();
       expect(weekendIssue?.severity).toBe('low');
@@ -178,7 +187,7 @@ describe('TREC-20 Rules', () => {
       const trec = makeTrec20({
         closingDate: '2025-02-09', // Sunday Feb 9, 2025
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const weekendIssue = issues.find(i => i.id === 'trec20.closing.weekend');
       expect(weekendIssue).toBeDefined();
       expect(weekendIssue?.severity).toBe('low');
@@ -195,7 +204,7 @@ describe('TREC-20 Rules', () => {
         },
         optionFeeCents: 20000,
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const negativeIssues = issues.filter(i => i.id.includes('negative'));
       expect(negativeIssues).toHaveLength(0);
     });
@@ -208,7 +217,7 @@ describe('TREC-20 Rules', () => {
           totalCents: -30000000,
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const negativeIssue = issues.find(i => i.id === 'trec20.price.negative');
       expect(negativeIssue).toBeDefined();
       expect(negativeIssue?.severity).toBe('critical');
@@ -218,7 +227,7 @@ describe('TREC-20 Rules', () => {
   describe('Required fields', () => {
     it('should fail when buyers missing', () => {
       const trec = makeTrec20({ buyerNames: [] });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const buyerIssue = issues.find(i => i.id === 'trec20.buyer.missing');
       expect(buyerIssue).toBeDefined();
       expect(buyerIssue?.severity).toBe('critical');
@@ -226,7 +235,7 @@ describe('TREC-20 Rules', () => {
 
     it('should fail when sellers missing', () => {
       const trec = makeTrec20({ sellerNames: [] });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const sellerIssue = issues.find(i => i.id === 'trec20.seller.missing');
       expect(sellerIssue).toBeDefined();
       expect(sellerIssue?.severity).toBe('critical');
@@ -241,7 +250,7 @@ describe('TREC-20 Rules', () => {
           zip: '77002',
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const streetIssue = issues.find(i => i.id === 'trec20.address.street.missing');
       expect(streetIssue).toBeDefined();
       expect(streetIssue?.severity).toBe('critical');
@@ -258,7 +267,7 @@ describe('TREC-20 Rules', () => {
           totalCents: 30000000,
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const cashIssues = issues.filter(i => i.id === 'trec20.cash.has.financing');
       expect(cashIssues).toHaveLength(0);
     });
@@ -272,7 +281,7 @@ describe('TREC-20 Rules', () => {
           totalCents: 30000000,
         },
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       const cashIssue = issues.find(i => i.id === 'trec20.cash.has.financing');
       expect(cashIssue).toBeDefined();
       expect(cashIssue?.severity).toBe('high');
@@ -282,7 +291,7 @@ describe('TREC-20 Rules', () => {
   describe('Complete validation', () => {
     it('should validate a perfect document with no issues', () => {
       const trec = makeTrec20(); // Factory default is valid
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       expect(issues).toHaveLength(0);
     });
 
@@ -298,7 +307,7 @@ describe('TREC-20 Rules', () => {
         effectiveDate: '2025-02-15',
         closingDate: '2025-02-01', // Before effective
       });
-      const issues = runRules(trec, trec20Rules);
+      const issues = runRules(trec, trec20Rules(defaultRegistry));
       
       expect(issues.length).toBeGreaterThan(3);
       expect(issues.some(i => i.id === 'trec20.buyer.missing')).toBe(true);

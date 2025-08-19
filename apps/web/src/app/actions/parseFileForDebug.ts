@@ -1,7 +1,7 @@
 'use server';
 
 import { readAcroForm, detectVersion } from '@repo/parsers';
-import { createClient } from '@repo/shared/supabase/server';
+import { createClient } from '@repo/shared';
 
 /**
  * Debug action to test PDF parsing functionality

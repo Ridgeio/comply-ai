@@ -1,11 +1,11 @@
 'use server';
 
-import { createClient, createAdminClient } from '@repo/shared/supabase/server';
 import { toRawTrec20 } from '@repo/parsers';
-import { fromRawTrec20, runRules, trec20Rules } from '@repo/shared';
+import { createClient, createAdminClient , fromRawTrec20, runRules, trec20Rules } from '@repo/shared';
+import type { Database as _Database } from '@repo/shared/types/supabase';
+
 import { insertReport, insertIssues, getUserOrgId, verifyTransactionAccess } from '@/src/lib/db';
 import { countBySeverity } from '@/src/lib/severity';
-import type { Database } from '@repo/shared/types/supabase';
 
 export async function generateReport(transactionId: string, fileId: string) {
   try {

@@ -1,8 +1,8 @@
 'use server'
 
-import { supabaseServer } from '@/src/lib/supabaseServer'
-import { createAdminClient } from '@/src/lib/supabaseAdmin'
 import { setActiveOrgCookie } from '@/src/lib/org'
+import { createAdminClient } from '@/src/lib/supabaseAdmin'
+import { supabaseServer } from '@/src/lib/supabaseServer'
 
 export async function createOrganizationForCurrentUser(name: string) {
   const sb = supabaseServer()

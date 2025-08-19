@@ -2,11 +2,9 @@ import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { PDFDocument } from 'pdf-lib';
 import type { VersionDetectionResult } from './types';
 
-// Set worker to use built-in legacy worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/legacy/build/pdf.worker.mjs',
-  import.meta.url
-).toString();
+// Set worker to use CDN version for compatibility
+// In production, you might want to self-host this file
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/legacy/build/pdf.worker.min.js`;
 
 /**
  * Detect version from text content (used by OCR path)

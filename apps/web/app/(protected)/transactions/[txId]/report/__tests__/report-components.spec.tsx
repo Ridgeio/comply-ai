@@ -1,54 +1,72 @@
-import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ReportSummary } from '../ReportSummary'
+import { describe, it, expect, vi } from 'vitest'
+
 import { IssuesTable } from '../IssuesTable'
+import { ReportSummary } from '../ReportSummary'
+
 import type { ComplianceIssue } from '@/src/app/transactions/[txId]/actions/reportActions'
 
 describe('Report Components', () => {
   describe('ReportSummary', () => {
     it('should render severity counts correctly', () => {
-      const counts = {
-        critical: 2,
-        high: 3,
-        medium: 1,
-        low: 4,
-        info: 0
-      }
+      const mockReport = {
+        id: 'report-1',
+        tx_id: 'tx-1',
+        created_at: '2025-01-17T10:00:00Z',
+        updated_at: '2025-01-17T10:00:00Z'
+      };
+      
+      const mockIssues = [
+        { id: '1', severity: 'critical' as const, code: 'test', message: 'test' },
+        { id: '2', severity: 'critical' as const, code: 'test', message: 'test' },
+        { id: '3', severity: 'high' as const, code: 'test', message: 'test' },
+        { id: '4', severity: 'high' as const, code: 'test', message: 'test' },
+        { id: '5', severity: 'high' as const, code: 'test', message: 'test' },
+        { id: '6', severity: 'medium' as const, code: 'test', message: 'test' },
+        { id: '7', severity: 'low' as const, code: 'test', message: 'test' },
+        { id: '8', severity: 'low' as const, code: 'test', message: 'test' },
+        { id: '9', severity: 'low' as const, code: 'test', message: 'test' },
+        { id: '10', severity: 'low' as const, code: 'test', message: 'test' }
+      ];
 
-      render(<ReportSummary countsBySeverity={counts} />)
+      render(<ReportSummary report={mockReport} issues={mockIssues} />)
 
       // Check critical count and label
-      expect(screen.getByText('2')).toBeInTheDocument()
-      expect(screen.getByText('Critical')).toBeInTheDocument()
+      const criticalElements = screen.getAllByText('2');
+      expect(criticalElements.length).toBeGreaterThan(0);
+      expect(screen.getByText('2 Critical')).toBeInTheDocument()
 
-      // Check high count and label
-      expect(screen.getByText('3')).toBeInTheDocument()
-      expect(screen.getByText('High')).toBeInTheDocument()
+      // Check high count and label  
+      const highElements = screen.getAllByText('3');
+      expect(highElements.length).toBeGreaterThan(0);
+      expect(screen.getByText('3 High')).toBeInTheDocument()
 
       // Check medium count and label
-      expect(screen.getByText('1')).toBeInTheDocument()
-      expect(screen.getByText('Medium')).toBeInTheDocument()
+      const mediumElements = screen.getAllByText('1');
+      expect(mediumElements.length).toBeGreaterThan(0);
+      expect(screen.getByText('1 Medium')).toBeInTheDocument()
 
       // Check low count and label
-      expect(screen.getByText('4')).toBeInTheDocument()
-      expect(screen.getByText('Low')).toBeInTheDocument()
+      const lowElements = screen.getAllByText('4');
+      expect(lowElements.length).toBeGreaterThan(0);
+      expect(screen.getByText('4 Low')).toBeInTheDocument()
 
       // Info should show 0
-      expect(screen.getByText('0')).toBeInTheDocument()
-      expect(screen.getByText('Info')).toBeInTheDocument()
+      const zeroElements = screen.getAllByText('0');
+      expect(zeroElements.length).toBeGreaterThan(0);
+      expect(screen.getByText('0 Info')).toBeInTheDocument()
     })
 
     it('should render zeros for empty counts', () => {
-      const counts = {
-        critical: 0,
-        high: 0,
-        medium: 0,
-        low: 0,
-        info: 0
-      }
+      const mockReport = {
+        id: 'report-1',
+        tx_id: 'tx-1',
+        created_at: '2025-01-17T10:00:00Z',
+        updated_at: '2025-01-17T10:00:00Z'
+      };
 
-      render(<ReportSummary countsBySeverity={counts} />)
+      render(<ReportSummary report={mockReport} issues={[]} />)
 
       // Should show 5 zeros (one for each severity)
       const zeros = screen.getAllByText('0')
@@ -179,13 +197,13 @@ describe('Report Components', () => {
 
       // Find severity badges in table cells (Badge components)
       const criticalBadges = screen.getAllByText('critical')
-      const criticalBadge = criticalBadges.find(el => el.closest('.bg-red-100'))
+      const criticalBadge = criticalBadges.find(el => el.closest('.bg-destructive'))
       
       const highBadges = screen.getAllByText('high')
-      const highBadge = highBadges.find(el => el.closest('.bg-orange-100'))
+      const highBadge = highBadges.find(el => el.closest('.bg-primary'))
       
       const lowBadges = screen.getAllByText('low')
-      const lowBadge = lowBadges.find(el => el.closest('.bg-blue-100'))
+      const lowBadge = lowBadges.find(el => el.closest('[class*="border"]'))
 
       // Verify badges exist with correct styling
       expect(criticalBadge).toBeTruthy()

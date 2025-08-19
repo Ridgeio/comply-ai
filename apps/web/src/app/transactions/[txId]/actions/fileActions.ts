@@ -1,9 +1,8 @@
 'use server'
 
-import { getAuthenticatedContext } from '@/src/lib/auth-helpers'
-import { buildStoragePath } from '@repo/shared'
-import { revalidatePath } from 'next/cache'
 import type { FileWithJobStatus } from './types'
+
+import { getAuthenticatedContext } from '@/src/lib/auth-helpers'
 
 /**
  * List all files for a transaction with their job status
