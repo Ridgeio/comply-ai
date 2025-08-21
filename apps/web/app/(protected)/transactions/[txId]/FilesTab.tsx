@@ -3,6 +3,7 @@
 import { format } from 'date-fns';
 import { Loader2, FileText, Eye, Scan } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { UploadDropzone } from './UploadDropzone';
 
@@ -15,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getSignedUrl } from '@/src/app/transactions/[txId]/actions/getSignedUrl';
 import { listFilesWithJobStatus, type FileWithJobStatus } from '@/src/app/transactions/[txId]/actions/listFilesWithJobStatus';
 import { uploadFilesEnhanced } from '@/src/app/transactions/[txId]/actions/uploadFiles';
+import { generateReport } from '@/src/app/transactions/[txId]/actions/reportActions';
 
 interface FilesTabProps {
   txId: string;
@@ -28,9 +30,11 @@ export function FilesTab({ txId, initialFiles = [] }: FilesTabProps) {
   const [files, setFiles] = useState<FileWithJobStatus[]>(initialFiles);
   const [uploading, setUploading] = useState(false);
   const [polling, setPolling] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
   const pollCountRef = useRef(0);
   const pollTimeoutRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
+  const router = useRouter();
   
   // Load files on mount if no initialFiles provided
   useEffect(() => {
@@ -146,6 +150,39 @@ export function FilesTab({ txId, initialFiles = [] }: FilesTabProps) {
     }
   }, [toast]);
 
+  // Handle generate report
+  const handleGenerateReport = useCallback(async () => {
+    const doneFiles = files.filter(file => file.job?.status === 'done');
+    if (doneFiles.length === 0) return;
+
+    setGeneratingReport(true);
+    try {
+      // Use the first completed file as primary file
+      const primaryFile = doneFiles[0];
+      await generateReport({
+        txId,
+        primaryFileId: primaryFile.id
+      });
+      
+      toast({
+        title: 'Report Generated',
+        description: 'Compliance report has been generated successfully'
+      });
+      
+      // Navigate to report tab
+      router.push(`/transactions/${txId}?tab=report`);
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate report',
+        variant: 'destructive'
+      });
+    } finally {
+      setGeneratingReport(false);
+    }
+  }, [files, txId, toast, router]);
+
   // Get status badge variant
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -169,6 +206,12 @@ export function FilesTab({ txId, initialFiles = [] }: FilesTabProps) {
 
   // Check if any files are in OCR mode
   const hasOcrFiles = files.some(file => file.extraction_mode === 'ocr');
+
+  // Check if files are ready for report generation
+  const hasCompletedFiles = files.some(file => file.job?.status === 'done');
+  const hasProcessingFiles = files.some(file => 
+    file.job?.status === 'queued' || file.job?.status === 'processing'
+  );
 
   return (
     <div className="space-y-4">
@@ -267,6 +310,36 @@ export function FilesTab({ txId, initialFiles = [] }: FilesTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Generate Report Button */}
+      {hasCompletedFiles && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Button
+                onClick={handleGenerateReport}
+                disabled={generatingReport || hasProcessingFiles}
+                size="lg"
+                className="min-w-[200px]"
+              >
+                {generatingReport ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  'Generate Report'
+                )}
+              </Button>
+              {hasProcessingFiles && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Please wait for all files to finish processing
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

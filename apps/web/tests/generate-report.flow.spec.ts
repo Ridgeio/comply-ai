@@ -69,8 +69,19 @@ describe('Generate Report Flow', () => {
     })
 
 
-    // Render Files tab
-    render(React.createElement(FilesTab, { txId: "tx-123" }))
+    // Render Files tab with initial files to avoid cookies issue
+    render(React.createElement(FilesTab, { 
+      txId: "tx-123",
+      initialFiles: [{
+        id: 'file-1',
+        path: 'transactions/org-123/tx-123/2025/01/15/contract.pdf',
+        name: 'contract.pdf',
+        uploaded_by: 'user-123',
+        created_at: '2025-01-15T10:00:00Z',
+        extraction_mode: 'acroform' as const,
+        job: { status: 'done' as const }
+      }]
+    }))
 
     // Wait for files to load
     await waitFor(() => {
@@ -140,8 +151,55 @@ describe('Generate Report Flow', () => {
       }
     })
 
-    // Render Report tab
-    render(React.createElement(ReportTab, { txId: "tx-123" }))
+    // Render Report tab with initial data to avoid cookies issue
+    render(React.createElement(ReportTab, { 
+      txId: "tx-123",
+      initialData: {
+        report: {
+          id: 'report-123',
+          tx_id: 'tx-123',
+          created_at: '2025-01-15T12:00:00Z',
+          updated_at: '2025-01-15T12:00:00Z',
+          metadata: {
+            fileId: 'file-1',
+            fileName: 'contract.pdf'
+          }
+        },
+        issues: [
+          {
+            id: 'issue-1',
+            report_id: 'report-123',
+            severity: 'critical',
+            code: 'MISSING_BUYER',
+            message: 'At least one buyer name is required',
+            cite: 'TREC 20-18 ¶1'
+          },
+          {
+            id: 'issue-2',
+            report_id: 'report-123',
+            severity: 'high',
+            code: 'OUTDATED_VERSION',
+            message: 'Form version is outdated',
+            cite: 'TREC Updates'
+          },
+          {
+            id: 'issue-3',
+            report_id: 'report-123',
+            severity: 'low',
+            code: 'WEEKEND_CLOSING',
+            message: 'Closing date falls on a weekend',
+            cite: null
+          }
+        ],
+        countsBySeverity: {
+          critical: 1,
+          high: 1,
+          medium: 0,
+          low: 1,
+          info: 0
+        }
+      }
+    }))
 
     // Wait for report to load
     await waitFor(() => {
@@ -149,9 +207,9 @@ describe('Generate Report Flow', () => {
     })
 
     // Check summary shows severity labels
-    expect(screen.getByText('Critical')).toBeInTheDocument()
-    expect(screen.getByText('High')).toBeInTheDocument()
-    expect(screen.getByText('Low')).toBeInTheDocument()
+    expect(screen.getByText('1 Critical')).toBeInTheDocument()
+    expect(screen.getByText('1 High')).toBeInTheDocument()
+    expect(screen.getByText('1 Low')).toBeInTheDocument()
     
     // Check that the counts are displayed (there will be multiple "1"s, so we check by getAllByText)
     const ones = screen.getAllByText('1')

@@ -10,6 +10,16 @@ vi.mock('@/components/ui/use-toast', () => ({
   })
 }));
 
+// Mock Next.js router
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: vi.fn()
+  }),
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({ txId: 'test-123' })
+}));
+
 // Mock server actions
 vi.mock('@/src/app/transactions/[txId]/actions/uploadFiles', () => ({
   uploadFilesEnhanced: vi.fn()
@@ -21,6 +31,10 @@ vi.mock('@/src/app/transactions/[txId]/actions/listFilesWithJobStatus', () => ({
 
 vi.mock('@/src/app/transactions/[txId]/actions/getSignedUrl', () => ({
   getSignedUrl: vi.fn()
+}));
+
+vi.mock('@/src/app/transactions/[txId]/actions/reportActions', () => ({
+  generateReport: vi.fn()
 }));
 
 describe('Files Tab', () => {

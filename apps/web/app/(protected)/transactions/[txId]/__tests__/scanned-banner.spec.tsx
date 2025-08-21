@@ -52,7 +52,7 @@ describe('Scanned Mode Banner', () => {
     render(<FilesTab txId="tx-123" initialFiles={mockFiles} />)
     
     // Banner should appear immediately
-    const banner = screen.getByText(/Scanned mode may reduce accuracy/i)
+    const banner = screen.getByText(/One or more files required OCR extraction/i)
     expect(banner).toBeInTheDocument()
     
     // Verify it's in an alert component
@@ -79,7 +79,7 @@ describe('Scanned Mode Banner', () => {
     expect(screen.getByText('contract.pdf')).toBeInTheDocument()
     
     // Banner should not be present
-    const banner = screen.queryByText(/Scanned mode may reduce accuracy/i)
+    const banner = screen.queryByText(/One or more files required OCR extraction/i)
     expect(banner).not.toBeInTheDocument()
   })
   
@@ -102,7 +102,7 @@ describe('Scanned Mode Banner', () => {
     expect(screen.getByText('contract.pdf')).toBeInTheDocument()
     
     // Banner should not be present
-    const banner = screen.queryByText(/Scanned mode may reduce accuracy/i)
+    const banner = screen.queryByText(/One or more files required OCR extraction/i)
     expect(banner).not.toBeInTheDocument()
   })
 })

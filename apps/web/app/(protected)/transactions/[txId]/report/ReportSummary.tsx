@@ -12,25 +12,36 @@ import { generateReport } from '@/src/app/transactions/[txId]/actions/reportActi
 import type { ComplianceIssue } from '@/src/app/transactions/[txId]/actions/reportActions';
 
 interface ReportSummaryProps {
-  report: {
+  countsBySeverity?: Record<ComplianceIssue['severity'], number>;
+  report?: {
     id: string;
     tx_id: string;
     created_at: string;
     updated_at: string;
   };
-  issues: ComplianceIssue[];
+  issues?: ComplianceIssue[];
   txId?: string;
 }
 
-export function ReportSummary({ report, issues = [], txId }: ReportSummaryProps) {
+export function ReportSummary({ countsBySeverity, report, issues, txId }: ReportSummaryProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const { toast } = useToast();
-
-  // Calculate counts by severity - handle undefined issues
-  const countsBySeverity = (issues || []).reduce((acc, issue) => {
-    acc[issue.severity] = (acc[issue.severity] || 0) + 1;
-    return acc;
-  }, {} as Record<ComplianceIssue['severity'], number>);
+  
+  // Calculate counts from issues if countsBySeverity not provided
+  const counts = countsBySeverity || (
+    issues ? issues.reduce((acc, issue) => {
+      acc[issue.severity] = (acc[issue.severity] || 0) + 1;
+      return acc;
+    }, {} as Record<ComplianceIssue['severity'], number>) : {}
+  );
+  
+  // Ensure all severities have a count
+  const allSeverities: ComplianceIssue['severity'][] = ['critical', 'high', 'medium', 'low', 'info'];
+  allSeverities.forEach(severity => {
+    if (!counts[severity]) {
+      counts[severity] = 0;
+    }
+  });
 
   const severityConfig = {
     critical: { label: 'Critical', color: 'text-red-600', bgColor: 'bg-red-50' },
@@ -110,7 +121,7 @@ export function ReportSummary({ report, issues = [], txId }: ReportSummaryProps)
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {Object.entries(severityConfig).map(([severity, config]) => {
-            const count = countsBySeverity[severity as ComplianceIssue['severity']] || 0;
+            const count = counts[severity as ComplianceIssue['severity']] || 0;
             return (
               <div
                 key={severity}
