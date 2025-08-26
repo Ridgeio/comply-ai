@@ -29,6 +29,10 @@ export function trec20Rules(registry: FormsRegistry): Rule<Trec20>[] {
       severity: 'high',
       cite: 'Form footer',
       predicate: (trec) => !trec.formVersion || trec.formVersion.trim() === '',
+      debug: (trec) => ({
+        formVersion: trec.formVersion,
+        isEmpty: !trec.formVersion || trec.formVersion.trim() === ''
+      }),
     },
 
     // 2. Version outdated
@@ -42,6 +46,11 @@ export function trec20Rules(registry: FormsRegistry): Rule<Trec20>[] {
         message: `Outdated form version: ${trec.formVersion}. Expected ${expectedVersion}`,
         data: { currentVersion: trec.formVersion, expectedVersion },
       }),
+      debug: (trec) => ({
+        formVersion: trec.formVersion,
+        expectedVersion,
+        isOutdated: isOutdated(trec.formVersion, 'TREC-20', registry)
+      }),
   },
 
   // 3. Buyer required
@@ -51,6 +60,11 @@ export function trec20Rules(registry: FormsRegistry): Rule<Trec20>[] {
     severity: 'critical',
     cite: 'TREC 20-18 ¶1 Parties',
     predicate: (trec) => !trec.buyerNames || trec.buyerNames.length === 0,
+    debug: (trec) => ({
+      buyerNames: trec.buyerNames,
+      buyerCount: trec.buyerNames?.length || 0,
+      expectedMinimum: 1
+    }),
   },
 
   // 4. Seller required
@@ -60,6 +74,11 @@ export function trec20Rules(registry: FormsRegistry): Rule<Trec20>[] {
     severity: 'critical',
     cite: 'TREC 20-18 ¶1 Parties',
     predicate: (trec) => !trec.sellerNames || trec.sellerNames.length === 0,
+    debug: (trec) => ({
+      sellerNames: trec.sellerNames,
+      sellerCount: trec.sellerNames?.length || 0,
+      expectedMinimum: 1
+    }),
   },
 
   // 5. Address street required
@@ -69,6 +88,10 @@ export function trec20Rules(registry: FormsRegistry): Rule<Trec20>[] {
     severity: 'critical',
     cite: 'TREC 20-18 ¶2 Property',
     predicate: (trec) => !trec.propertyAddress.street || trec.propertyAddress.street.trim() === '',
+    debug: (trec) => ({
+      street: trec.propertyAddress.street,
+      isEmpty: !trec.propertyAddress.street || trec.propertyAddress.street.trim() === ''
+    }),
   },
 
   // 6. Address city required
@@ -129,6 +152,19 @@ export function trec20Rules(registry: FormsRegistry): Rule<Trec20>[] {
       return {
         message: `Cash ($${(cashPortionCents / 100).toFixed(2)}) + Financed ($${(financedPortionCents / 100).toFixed(2)}) = $${(sum / 100).toFixed(2)}, but total is $${(totalCents / 100).toFixed(2)} (difference: $${(difference / 100).toFixed(2)})`,
         data: { cashPortionCents, financedPortionCents, totalCents, sum, difference },
+      };
+    },
+    debug: (trec) => {
+      const { cashPortionCents = 0, financedPortionCents = 0, totalCents } = trec.salesPrice;
+      const sum = cashPortionCents + financedPortionCents;
+      const difference = Math.abs(sum - totalCents);
+      return {
+        cashPortionCents,
+        financedPortionCents,
+        totalCents,
+        calculatedSum: sum,
+        difference,
+        toleranceCents: 100
       };
     },
   },

@@ -15,9 +15,11 @@ export async function insertReport(
     metadata?: Record<string, unknown>;
   }
 ) {
+  // Map transaction_id to tx_id for the database
+  const { transaction_id, ...rest } = data;
   const { data: report, error } = await supabase
     .from('reports')
-    .insert(data)
+    .insert({ ...rest, tx_id: transaction_id })
     .select()
     .single();
 
@@ -31,21 +33,25 @@ export async function insertIssues(
   orgId: string,
   issues: Issue[]
 ) {
-  if (issues.length === 0) return;
+  if (issues.length === 0) return [];
 
   const issueRows = issues.map((issue) => ({
     report_id: reportId,
     org_id: orgId,
     severity: issue.severity,
-    issue_id: issue.id,
+    rule_id: issue.id,
     message: issue.message,
     cite: issue.cite || null,
-    data: issue.data || null,
+    details_json: issue.data || null,
   }));
 
-  const { error } = await supabase.from('issues').insert(issueRows);
+  const { data, error } = await supabase
+    .from('issues')
+    .insert(issueRows)
+    .select();
 
   if (error) throw error;
+  return data;
 }
 
 export async function fetchLatestReport(
@@ -55,7 +61,7 @@ export async function fetchLatestReport(
   const { data: report, error: reportError } = await supabase
     .from('reports')
     .select('*')
-    .eq('transaction_id', transactionId)
+    .eq('tx_id', transactionId)
     .order('created_at', { ascending: false })
     .limit(1)
     .single();

@@ -64,17 +64,38 @@ export default function ReportPage() {
     setGenerating(true);
     setError(null);
 
-    // For demo, we'll use a hardcoded file ID
-    // In production, you'd have a file selector or use the primary file
-    const fileId = 'primary-file-id'; // TODO: Get actual file ID
+    try {
+      console.log('Starting report generation for transaction:', transactionId);
+      
+      // Get the first file for this transaction
+      const response = await fetch(`/api/transactions/${transactionId}/files`);
+      const { data: files, error: filesError } = await response.json();
+      
+      console.log('Files API response:', { files, filesError });
+      
+      if (filesError || !files || files.length === 0) {
+        setError('No files found for this transaction. Please upload a file first.');
+        setGenerating(false);
+        return;
+      }
 
-    const result = await generateReport(transactionId, fileId);
+      const fileId = files[0].id;
+      console.log('Using file ID:', fileId);
+      
+      const result = await generateReport(transactionId, fileId);
+      console.log('Generate report result:', result);
 
-    if (result.success) {
-      // Reload the report
-      await loadReport();
-    } else {
-      setError(result.error || 'Failed to generate report');
+      if (result.success) {
+        console.log('Report generated successfully, reloading...');
+        // Reload the report
+        await loadReport();
+      } else {
+        console.error('Report generation failed:', result.error);
+        setError(result.error || 'Failed to generate report');
+      }
+    } catch (err) {
+      console.error('Error generating report:', err);
+      setError('Failed to generate report. Please try again.');
     }
 
     setGenerating(false);

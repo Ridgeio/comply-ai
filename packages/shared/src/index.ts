@@ -34,3 +34,7 @@ export { MockLLM, type LlmProvider, type LlmResponse } from './ai/provider'
 
 // Test utilities
 export { makeTrec20 } from './test/factories'
+
+// Audit
+export { createAuditLog, createReportAuditLog, createRuleAuditLog } from './audit/audit'
+export type { AuditAction, AuditTargetType, AuditLogEntry, AuditLogResult } from './audit/audit'

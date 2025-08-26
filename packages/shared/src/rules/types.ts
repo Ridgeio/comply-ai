@@ -15,4 +15,5 @@ export type Rule<T> = {
   cite?: string;
   predicate: (input: T) => boolean;  // returns true when a problem exists
   build?: (input: T) => Partial<Issue>; // allows dynamic message/data
+  debug?: (input: T) => Record<string, unknown>; // returns minimal inputs used for debugging
 };

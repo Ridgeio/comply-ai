@@ -16,7 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getSignedUrl } from '@/src/app/transactions/[txId]/actions/getSignedUrl';
 import { listFilesWithJobStatus, type FileWithJobStatus } from '@/src/app/transactions/[txId]/actions/listFilesWithJobStatus';
 import { uploadFilesEnhanced } from '@/src/app/transactions/[txId]/actions/uploadFiles';
-import { generateReport } from '@/src/app/transactions/[txId]/actions/reportActions';
+import { generateReport } from '@/src/app/transactions/[txId]/actions/generateReport';
 
 interface FilesTabProps {
   txId: string;
@@ -159,18 +159,19 @@ export function FilesTab({ txId, initialFiles = [] }: FilesTabProps) {
     try {
       // Use the first completed file as primary file
       const primaryFile = doneFiles[0];
-      await generateReport({
-        txId,
-        primaryFileId: primaryFile.id
-      });
+      const result = await generateReport(txId, primaryFile.id);
       
-      toast({
-        title: 'Report Generated',
-        description: 'Compliance report has been generated successfully'
-      });
-      
-      // Navigate to report tab
-      router.push(`/transactions/${txId}?tab=report`);
+      if (result.success) {
+        toast({
+          title: 'Report Generated',
+          description: `Found ${result.issueCount} compliance issues`
+        });
+        
+        // Navigate to report tab
+        router.push(`/transactions/${txId}?tab=report`);
+      } else {
+        throw new Error(result.error || 'Failed to generate report');
+      }
     } catch (error) {
       console.error('Failed to generate report:', error);
       toast({

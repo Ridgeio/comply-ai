@@ -30,6 +30,14 @@ export function runRules<T>(input: T, rules: Rule<T>[]): Issue[] {
       // Apply custom build if provided
       const customizations = rule.build?.(input) ?? {};
       
+      // Capture debug snapshot if debug function is provided
+      if (rule.debug) {
+        const debugData = rule.debug(input);
+        // Add debug data to the issue's data field
+        const existingData = customizations.data || baseIssue.data || {};
+        customizations.data = { ...existingData, debug: debugData };
+      }
+      
       // Merge, with customizations overriding base (except cite which is preserved unless explicitly overridden)
       issues.push({ ...baseIssue, ...customizations });
     }
