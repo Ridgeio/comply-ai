@@ -114,28 +114,22 @@ export async function generateReport(transactionId: string, fileId: string) {
     // Parse PDF and extract raw data
     console.log('[generateReport] Parsing PDF with toRawTrec20');
     
-    // Import MockOcr directly from the ocr module
-    const { MockOcr } = await import('@repo/parsers/src/ocr');
-    
-    // Create a mock OCR provider with sample text
-    // In production, you would use a real OCR provider like Tesseract or AWS Textract
-    const mockOcrProvider = new MockOcr(`
-      TREC 20-18
-      ONE TO FOUR FAMILY RESIDENTIAL CONTRACT (RESALE)
-      1. PARTIES: Buyer Name: John Smith
-      Seller Name: Jane Doe
-      2. PROPERTY: 456 Elm Street, Houston, TX 77001
-      3. SALES PRICE: $450,000
-    `);
-    
     let parseResult;
     try {
-      // First try without OCR
+      // Try to extract form fields without OCR
       parseResult = await toRawTrec20(buffer);
-    } catch (ocrError) {
-      console.log('[generateReport] PDF needs OCR, using mock provider');
-      // If it needs OCR, try with the mock provider
-      parseResult = await toRawTrec20(buffer, { ocrProvider: mockOcrProvider });
+    } catch (error) {
+      console.error('[generateReport] PDF parsing failed:', error);
+      
+      // Check if this PDF needs OCR
+      if (error instanceof Error && error.message.includes('OCR provider not configured')) {
+        return {
+          success: false,
+          error: 'This PDF requires OCR to extract data. The document appears to be a scanned image or non-fillable PDF. Please upload a fillable PDF form or configure OCR processing.',
+        };
+      }
+      
+      throw error;
     }
     
     console.log('[generateReport] PDF parsed, result keys:', Object.keys(parseResult));
