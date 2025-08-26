@@ -20,12 +20,8 @@ export async function listFilesWithJobStatus(
 ): Promise<{ files: FileWithJobStatus[] }> {
   const { adminClient: supabase } = await getAuthenticatedContext();
 
-  // Try to fetch with extraction_mode first, fall back without it if column doesn't exist
-  let files: any[] | null = null;
-  let error: any = null;
-
-  // First attempt with extraction_mode
-  const result = await supabase
+  // Fetch files with their job status
+  const { data: files, error } = await supabase
     .from('transaction_files')
     .select(`
       id,
@@ -41,32 +37,6 @@ export async function listFilesWithJobStatus(
     `)
     .eq('tx_id', txId)
     .order('created_at', { ascending: false });
-
-  if (result.error && result.error.message?.includes('column transaction_files.extraction_mode does not exist')) {
-    // Column doesn't exist, fetch without it
-    console.log('extraction_mode column not found, fetching without it');
-    const fallbackResult = await supabase
-      .from('transaction_files')
-      .select(`
-        id,
-        path,
-        created_at,
-        uploaded_by,
-        ingest_jobs (
-          id,
-          status,
-          error
-        )
-      `)
-      .eq('tx_id', txId)
-      .order('created_at', { ascending: false });
-    
-    files = fallbackResult.data;
-    error = fallbackResult.error;
-  } else {
-    files = result.data;
-    error = result.error;
-  }
 
   if (error) {
     console.error('Error fetching files with job status:', error);
